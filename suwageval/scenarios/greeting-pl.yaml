@@ -1,0 +1,7 @@
+key: greeting-pl
+tags: [regression, smoke]
+conversation:
+  - user: "Dzień dobry, w czym możecie mi pomóc?"
+# The old draft had an LLM-judge check here (greeting-in-polish: "answer is in Polish, polite, promises nothing the
+# shop cannot do"). The judge comes after the MVP; until then the file format has no such check type.
+checks: []
