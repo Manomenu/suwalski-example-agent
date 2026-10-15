@@ -59,13 +59,21 @@ Items, discriminated by `kind`:
 The mapping between these items and Agent Framework's `Message`/`Content` lives in
 `example_agent/contract.py`, tested in `tests/test_contract.py`.
 
-## `suwageval/` — draft (v0)
+## `suwageval/` — what this agent tells suwageval
 
-What this agent will send to suwageval once its API exists; plain JSON, no script, and the
-format itself is a draft:
+The files suwageval reads from this repository, in the format of
+[docs/scenario-format.md](https://github.com/Manomenu/suwalski-agent-eval/blob/master/docs/scenario-format.md):
 
-- `agent-version.json` — system prompt, tools with JSON Schema arguments, context contract
-  (no `Retrieval`), the event types it emits with a schema for their `data`.
-- `scenarios/*.json` — `{key, tags, conversation, continuation}`.
-- `checks/*.json` — `{key, scenarioKey, type, where, config}`: `tool_called`, `tool_not_called`,
-  `event`, `judge`.
+- `agent.yaml` — the agent (`name`, `endpointUrl`) and its version: system prompt, model, tools
+  with JSON Schema parameters, the context contract (no `Retrieval`) and the event types it
+  emits with a schema for their `data`.
+- `scenarios/*.yaml` — one scenario per file (`key`, `tags`, `conversation`) with its `checks`
+  inside: `tool-called`, `tool-not-called`, `event`, `text`. (The judge check this agent had in
+  its draft comes after the MVP.)
+
+Check them without a server, from this folder, with the `suwageval` CLI (`just cli-install` in
+suwalski-agent-eval installs it; or `just cli validate` there, pointing at this folder):
+
+```sh
+suwageval validate
+```
