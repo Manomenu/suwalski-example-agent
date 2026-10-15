@@ -23,7 +23,7 @@ def client() -> TestClient:
 
 
 def test_turn_returns_items_with_event():
-    response = client().post("/agenteval/turn", json={"conversation": [{"kind": "UserMessage", "text": "Refund A-17"}]})
+    response = client().post("/suwageval/turn", json={"conversation": [{"kind": "UserMessage", "text": "Refund A-17"}]})
     assert response.status_code == 200
     items = response.json()["items"]
     assert [i["kind"] for i in items] == ["ToolCall", "ToolResult", "Event", "AssistantMessage"]
@@ -33,4 +33,4 @@ def test_turn_returns_items_with_event():
 
 def test_malformed_request_is_422():
     for body in ({}, {"conversation": [{"kind": "Nope"}]}, {"conversation": [{"kind": "UserMessage"}]}):
-        assert client().post("/agenteval/turn", json=body).status_code == 422
+        assert client().post("/suwageval/turn", json=body).status_code == 422

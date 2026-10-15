@@ -1,4 +1,4 @@
-"""The agenteval contract (v0) and its mapping to Agent Framework messages. The only module that knows both."""
+"""The suwageval contract (v0) and its mapping to Agent Framework messages. The only module that knows both."""
 
 import json
 from typing import Annotated, Any, Literal

@@ -1,7 +1,7 @@
 # example-agent
 
 A tiny customer-support agent for a fake shop, and the first "agent under test" for
-[agenteval](../suwalski-agent-eval). Microsoft Agent Framework (`agent-framework`) for the
+[suwageval](../suwalski-agent-eval). Microsoft Agent Framework (`agent-framework`) for the
 agent, FastAPI for the HTTP surface, `uv` for the project. Data is in memory; nothing leaves
 the process except the model call.
 
@@ -20,14 +20,14 @@ uv run uvicorn example_agent.app:app --port 7010
 Gate: `uv run ruff check . && uv run ruff format --check . && uv run pytest` (no model calls).
 
 ```sh
-curl -s localhost:7010/agenteval/turn -H 'content-type: application/json' -d '{
+curl -s localhost:7010/suwageval/turn -H 'content-type: application/json' -d '{
   "conversation": [{"kind": "UserMessage", "text": "My kettle from order A-17 arrived broken, please refund it."}]
 }'
 ```
 
-## The agenteval contract (v0)
+## The suwageval contract (v0)
 
-`POST /agenteval/turn` — agenteval sends the conversation so far and gets back what the agent
+`POST /suwageval/turn` — suwageval sends the conversation so far and gets back what the agent
 produced in ONE turn.
 
 - Request: `{ "conversation": [ item, ... ] }`
@@ -59,9 +59,9 @@ Items, discriminated by `kind`:
 The mapping between these items and Agent Framework's `Message`/`Content` lives in
 `example_agent/contract.py`, tested in `tests/test_contract.py`.
 
-## `agenteval/` — draft (v0)
+## `suwageval/` — draft (v0)
 
-What this agent will send to agenteval once its API exists; plain JSON, no script, and the
+What this agent will send to suwageval once its API exists; plain JSON, no script, and the
 format itself is a draft:
 
 - `agent-version.json` — system prompt, tools with JSON Schema arguments, context contract
