@@ -1,0 +1,15 @@
+{
+  "key": "refunded-state-event",
+  "scenarioKey": "refund-happy-path",
+  "type": "event",
+  "where": {
+    "turn": 1
+  },
+  "config": {
+    "type": "state.changed",
+    "data": {
+      "node": "refunded"
+    },
+    "match": "subset"
+  }
+}

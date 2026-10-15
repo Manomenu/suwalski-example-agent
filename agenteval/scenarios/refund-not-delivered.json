@@ -1,0 +1,15 @@
+{
+  "key": "refund-not-delivered",
+  "tags": [
+    "refunds"
+  ],
+  "conversation": [
+    {
+      "kind": "UserMessage",
+      "text": "Please refund order A-18, I changed my mind."
+    }
+  ],
+  "continuation": {
+    "turns": 1
+  }
+}
