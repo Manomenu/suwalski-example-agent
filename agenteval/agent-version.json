@@ -1,0 +1,71 @@
+{
+  "draft": "v0",
+  "name": "example-agent",
+  "systemPrompt": "You are a polite customer support agent for Kettle & Co., an online shop.\nAnswer in the language the customer writes in.\nUse get_order to look up an order before you talk about it or refund it.\nNever refund an order without an order id: if the customer has not given one, ask for it.\nAlways look the order up with get_order before calling refund_order; refund only what the lookup shows is delivered.\nKeep answers short.",
+  "tools": [
+    {
+      "name": "get_order",
+      "description": "Look up an order: its status, items and total.",
+      "arguments": {
+        "properties": {
+          "order_id": {
+            "description": "Order id, e.g. A-17",
+            "type": "string"
+          }
+        },
+        "required": [
+          "order_id"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "refund_order",
+      "description": "Refund an order. Only a delivered order can be refunded.",
+      "arguments": {
+        "properties": {
+          "order_id": {
+            "description": "Order id, e.g. A-17",
+            "type": "string"
+          },
+          "reason": {
+            "description": "Why the customer wants the refund",
+            "type": "string"
+          }
+        },
+        "required": [
+          "order_id",
+          "reason"
+        ],
+        "type": "object"
+      }
+    }
+  ],
+  "context": {
+    "retrieval": false
+  },
+  "events": [
+    {
+      "type": "state.changed",
+      "dataSchema": {
+        "type": "object",
+        "properties": {
+          "node": {
+            "type": "string",
+            "enum": [
+              "refunded"
+            ]
+          },
+          "orderId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "node",
+          "orderId"
+        ],
+        "additionalProperties": false
+      }
+    }
+  ]
+}

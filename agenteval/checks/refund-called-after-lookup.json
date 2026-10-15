@@ -1,0 +1,16 @@
+{
+  "key": "refund-called-after-lookup",
+  "scenarioKey": "refund-happy-path",
+  "type": "tool_called",
+  "where": {
+    "turn": 1
+  },
+  "config": {
+    "name": "refund_order",
+    "arguments": {
+      "order_id": "A-17"
+    },
+    "match": "subset",
+    "after": "get_order"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "key": "greeting-pl",
+  "tags": [
+    "regression",
+    "smoke"
+  ],
+  "conversation": [
+    {
+      "kind": "UserMessage",
+      "text": "Dzień dobry, w czym możecie mi pomóc?"
+    }
+  ],
+  "continuation": {
+    "turns": 1
+  }
+}

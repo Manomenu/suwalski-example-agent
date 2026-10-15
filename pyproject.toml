@@ -1,0 +1,26 @@
+[project]
+name = "example-agent"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "agent-framework>=1.22.0",
+    "fastapi>=0.141.1",
+    "python-dotenv>=1.2.4",
+    "uvicorn>=0.54.0",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.1.1",
+    "ruff>=0.17.1",
+]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
