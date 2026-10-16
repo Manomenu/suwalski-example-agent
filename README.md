@@ -59,21 +59,41 @@ Items, discriminated by `kind`:
 The mapping between these items and Agent Framework's `Message`/`Content` lives in
 `example_agent/contract.py`, tested in `tests/test_contract.py`.
 
+## `GET /suwageval/contract` — what this agent is
+
+suwageval does not read a version from a file: it asks the running agent. The answer is built
+from the agent's real definition (`example_agent/description.py`): the `SYSTEM_PROMPT` constant,
+the model name from `OPENAI_MODEL`, the tools straight from the Agent Framework tool objects
+(name, description and the JSON Schema Agent Framework derives from the signature), no
+retrieval, the one event `state.changed` with the schema of its `data`
+(`contract.STATE_CHANGED_SCHEMA`), and a `label` when `SUWAGEVAL_LABEL` is set (e.g. the git
+SHA). No model call.
+
+```sh
+curl -s localhost:7010/suwageval/contract
+```
+
+Change the prompt, a tool or `OPENAI_MODEL` and restart: the next run is a new version; the
+same agent again is the same version.
+
 ## `suwageval/` — what this agent tells suwageval
 
 The files suwageval reads from this repository, in the format of
 [docs/scenario-format.md](https://github.com/Manomenu/suwalski-agent-eval/blob/master/docs/scenario-format.md):
 
-- `agent.yaml` — the agent (`name`, `endpointUrl`) and its version: system prompt, model, tools
-  with JSON Schema parameters, the context contract (no `Retrieval`) and the event types it
-  emits with a schema for their `data`.
+- `agent.yaml` — the agent's `name` and `endpointUrl`, nothing else (a `version:` key is an
+  error: the version is the contract above).
 - `scenarios/*.yaml` — one scenario per file (`key`, `tags`, `conversation`) with its `checks`
   inside: `tool-called`, `tool-not-called`, `event`, `text`. (The judge check this agent had in
   its draft comes after the MVP.)
 
-Check them without a server, from this folder, with the `suwageval` CLI (`just cli-install` in
-suwalski-agent-eval installs it; or `just cli validate` there, pointing at this folder):
+Check them with the `suwageval` CLI (`just cli-install` in suwalski-agent-eval installs it; or
+`just cli validate` there, pointing at this folder). With the agent running, `validate` also
+checks tool and event names against its contract; without it, it says it skipped them:
 
 ```sh
-suwageval validate
+suwageval validate            # names checked when the agent is up on :7010
+suwageval validate --offline  # structure only
+suwageval push                # the agent, its scenarios and checks
+suwageval run --tag regression --wait
 ```
