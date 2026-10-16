@@ -8,3 +8,18 @@ checks:
     tool: refund_order
     where:
       turn: 1
+  - key: saw-it-is-shipped
+    type: tool-called
+    tool: get_order
+    args:
+      order_id:
+        $pattern: "^A-18$"
+    result:
+      status: shipped
+    where:
+      turn: 1
+  - key: no-refunded-state
+    type: event-not-emitted
+    event: state.changed
+    where:
+      turn: 1

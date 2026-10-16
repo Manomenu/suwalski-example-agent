@@ -31,15 +31,16 @@ def test_from_messages_maps_calls_results_and_answer_in_order():
         Message("tool", [Content.from_function_result("1", result='{"status": "delivered"}')]),
         Message("assistant", ["Here you go"]),
     ]
-    items = c.from_messages(messages)
+    items = c.from_messages(messages, "support")
     assert [i.kind for i in items] == ["ToolCall", "ToolResult", "AssistantMessage"]
     assert items[0].arguments == {"order_id": "A-17"}
+    assert items[0].agent == "support"
     assert items[1].call_id == "1" and not items[1].is_error
 
 
 def test_error_results_are_flagged():
     messages = [Message("tool", [Content.from_function_result("1", result='{"error": "nope"}')])]
-    assert c.from_messages(messages)[0].is_error
+    assert c.from_messages(messages, "support")[0].is_error
 
 
 def test_refund_adds_state_changed_event_after_its_result():

@@ -1,4 +1,4 @@
-"""The suwageval contract (v0) and its mapping to Agent Framework messages. The only module that knows both."""
+"""The suwageval contract (v1) and its mapping to Agent Framework messages. The only module that knows both."""
 
 import json
 from typing import Annotated, Any, Literal
@@ -27,6 +27,7 @@ class ToolCall(Item):
     id: str
     name: str
     arguments: dict[str, Any]
+    agent: str | None = None
 
 
 class ToolResult(Item):
@@ -93,15 +94,19 @@ def to_messages(conversation: list[ConversationItem]) -> list[Message]:
     return messages
 
 
-def from_messages(messages: list[Message]) -> list[ConversationItem]:
-    """Turn what the agent produced into contract items, in order."""
+def from_messages(messages: list[Message], agent: str) -> list[ConversationItem]:
+    """Turn what the agent produced into contract items, in order; every tool call names the LLM agent that made it."""
     items: list[ConversationItem] = []
     for message in messages:
         for content in message.contents:
             if content.type == "text" and message.role == "assistant" and content.text:
                 items.append(AssistantMessage(text=content.text))
             elif content.type == "function_call":
-                items.append(ToolCall(id=content.call_id, name=content.name, arguments=content.parse_arguments() or {}))
+                items.append(
+                    ToolCall(
+                        id=content.call_id, name=content.name, arguments=content.parse_arguments() or {}, agent=agent
+                    )
+                )
             elif content.type == "function_result":
                 text = content.result if isinstance(content.result, str) else json.dumps(content.result)
                 items.append(

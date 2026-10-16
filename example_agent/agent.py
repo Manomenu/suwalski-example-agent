@@ -18,6 +18,9 @@ Keep answers short."""
 
 TOOLS = [get_order, refund_order]
 
+# The one LLM agent of this system: its name in the contract and on every tool call it makes.
+AGENT_NAME = "support"
+
 
 @lru_cache
 def build_agent() -> Agent:
@@ -27,7 +30,7 @@ def build_agent() -> Agent:
         api_key=os.environ["OPENAI_API_KEY"],
         base_url=os.environ["OPENAI_BASE_URL"],
     )
-    return Agent(client, SYSTEM_PROMPT, name="support", tools=TOOLS)
+    return Agent(client, SYSTEM_PROMPT, name=AGENT_NAME, tools=TOOLS)
 
 
 async def run_turn(history: list[Message]) -> list[Message]:

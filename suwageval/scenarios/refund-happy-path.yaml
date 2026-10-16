@@ -6,12 +6,15 @@ checks:
   - key: refund-called-after-lookup
     type: tool-called
     tool: refund_order
+    by: support
     args:
       order_id: A-17
       reason:
         $judge:
           description: "Says the item arrived damaged or broken"
           examples: ["kettle arrived broken", "damaged on delivery"]
+    result:
+      refunded: 89.9
     where:
       turn: 1
       after: get_order
