@@ -5,8 +5,9 @@ A tiny customer-support agent for a fake shop, and the first "agent under test" 
 agent, FastAPI for the HTTP surface, `uv` for the project. Data is in memory; nothing leaves
 the process except the model call.
 
-- `get_order(order_id)` — status, items, total. Orders: `A-17` delivered, `A-18` shipped,
-  `A-19` processing, `A-20` already refunded.
+- `get_order(order_id)` — status, items, total. The shop has no orders of its own: each turn
+  gets them from the scenario's `fixtures` (below), so a scenario file shows every order the
+  agent can find.
 - `refund_order(order_id, reason)` — refunds only a delivered order, otherwise an error.
 
 ## Run
@@ -21,7 +22,8 @@ Gate: `uv run ruff check . && uv run ruff format --check . && uv run pytest` (no
 
 ```sh
 curl -s localhost:7010/suwageval/turn -H 'content-type: application/json' -d '{
-  "conversation": [{"kind": "UserMessage", "text": "My kettle from order A-17 arrived broken, please refund it."}]
+  "conversation": [{"kind": "UserMessage", "text": "My kettle from order A-17 arrived broken, please refund it."}],
+  "fixtures": {"orders": {"A-17": {"status": "delivered", "items": ["Kettle"], "total": 89.9}}}
 }'
 ```
 
@@ -54,7 +56,11 @@ Items, discriminated by `kind`:
   `{"kind":"Event","type":"state.changed","data":{"node":"refunded","orderId":"A-17"}}`.
 - `GET /suwageval/contract` describes the system as v1 does: one LLM agent, `support`, with its
   model, its system prompt as `config` and its tools; every `ToolCall` it produces names it in
-  `agent`, so checks can say `by: support`. No fixtures, no retrieval.
+  `agent`, so checks can say `by: support`. No retrieval.
+- Fixtures: `{"orders": {"A-17": {"status": "delivered", "items": ["Kettle"], "total": 89.9}}}`,
+  the shop of that turn (`context.fixturesSchema` is their JSON Schema; another shape is a 422).
+  The model never sees them: it learns about an order only by calling `get_order`, as it would
+  from a real shop. A turn without fixtures has an empty shop.
 - Choices made here: tool arguments are the tools' own parameter names (`order_id`, `reason`);
   `ToolResult.content` is the tool's JSON as text, and `isError` is true when it raised or
   returned `{"error": ...}`. Consecutive `ToolCall`s are replayed as one assistant message.

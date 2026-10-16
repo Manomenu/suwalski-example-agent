@@ -23,6 +23,7 @@ def test_contract_is_built_from_the_real_definition(monkeypatch):
     [event] = body["context"]["events"]
     assert event["type"] == "state.changed"
     assert event["dataSchema"]["required"] == ["node", "orderId"]
+    assert "orders" in body["context"]["fixturesSchema"]["properties"]
 
 
 def test_label_comes_from_the_environment(monkeypatch):

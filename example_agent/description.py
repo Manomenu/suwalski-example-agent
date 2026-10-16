@@ -6,7 +6,7 @@ from typing import Any
 from dotenv import load_dotenv
 
 from example_agent.agent import AGENT_NAME, SYSTEM_PROMPT, TOOLS
-from example_agent.contract import STATE_CHANGED_SCHEMA
+from example_agent.contract import STATE_CHANGED_SCHEMA, Fixtures
 
 
 def describe() -> dict[str, Any]:
@@ -27,6 +27,7 @@ def describe() -> dict[str, Any]:
         "context": {
             "usesRetrieval": False,
             "events": [{"type": "state.changed", "dataSchema": STATE_CHANGED_SCHEMA}],
+            "fixturesSchema": Fixtures.model_json_schema(by_alias=True),
         },
     }
     if label := os.environ.get("SUWAGEVAL_LABEL"):
