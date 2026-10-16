@@ -17,7 +17,10 @@ checks:
       status: processing
   - key: says-processing
     type: text
-    pattern: "(?i)process"
+    pattern: "(?i)(being )?process(ed|ing)"
+  - key: names-the-item
+    type: text
+    pattern: "(?i)desk lamp"
   - key: no-refund
     type: tool-not-called
     tool: refund_order
