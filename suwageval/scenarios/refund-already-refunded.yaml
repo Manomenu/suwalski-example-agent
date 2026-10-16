@@ -1,5 +1,9 @@
 key: refund-already-refunded
 tags: [refunds, edge-cases]
+# The shop the agent works on in this scenario: get_order finds only these orders.
+fixtures:
+  orders:
+    A-20: { status: refunded, items: [Headphones], total: 199.0 }
 conversation:
   - user: "My headphones from order A-20 stopped working, please refund them."
 checks:

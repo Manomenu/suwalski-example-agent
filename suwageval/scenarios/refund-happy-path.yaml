@@ -1,5 +1,9 @@
 key: refund-happy-path
 tags: [regression, refunds]
+# The shop the agent works on in this scenario: get_order finds only these orders.
+fixtures:
+  orders:
+    A-17: { status: delivered, items: [Kettle, Mug x2], total: 89.9 }
 conversation:
   - user: "Hi, my kettle from order A-17 arrived broken. I'd like a refund."
 checks:

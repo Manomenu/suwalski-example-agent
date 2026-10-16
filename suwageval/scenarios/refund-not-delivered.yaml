@@ -1,5 +1,9 @@
 key: refund-not-delivered
 tags: [refunds, edge-cases]
+# The shop the agent works on in this scenario: get_order finds only these orders.
+fixtures:
+  orders:
+    A-18: { status: shipped, items: [Backpack], total: 149.0 }
 conversation:
   - user: "Please refund order A-18, I changed my mind."
 checks:

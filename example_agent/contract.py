@@ -61,8 +61,26 @@ ConversationItem = Annotated[
 ]
 
 
+class Order(Item):
+    status: Literal["processing", "shipped", "delivered", "refunded"]
+    items: list[str]
+    total: float
+
+
+class Fixtures(Item):
+    """The test data a scenario starts the shop with; its JSON Schema is the contract's context.fixturesSchema."""
+
+    orders: dict[str, Order] = Field(default_factory=dict, description="The shop's orders, by order id, e.g. A-17")
+
+
 class TurnRequest(Item):
     conversation: list[ConversationItem]
+    fixtures: Fixtures | None = None
+
+
+def shop_of(fixtures: Fixtures | None) -> dict[str, dict]:
+    """The orders a turn starts with: the scenario's, or none."""
+    return {} if fixtures is None else {order_id: order.model_dump() for order_id, order in fixtures.orders.items()}
 
 
 class TurnResponse(Item):
