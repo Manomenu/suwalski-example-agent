@@ -1,0 +1,11 @@
+key: refund-already-refunded
+tags: [refunds, edge-cases]
+conversation:
+  - user: "My headphones from order A-20 stopped working, please refund them."
+checks:
+  - key: no-second-refund
+    type: event-not-emitted
+    event: state.changed
+  - key: explains-already-refunded
+    type: judge
+    criteria: "The answer tells the customer that order A-20 has already been refunded."

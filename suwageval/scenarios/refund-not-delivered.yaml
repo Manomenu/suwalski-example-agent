@@ -1,5 +1,5 @@
 key: refund-not-delivered
-tags: [refunds]
+tags: [refunds, edge-cases]
 conversation:
   - user: "Please refund order A-18, I changed my mind."
 checks:

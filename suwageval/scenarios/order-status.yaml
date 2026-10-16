@@ -1,0 +1,19 @@
+key: order-status
+tags: [orders, smoke, regression]
+conversation:
+  - user: "Where is my order A-19?"
+checks:
+  - key: looked-up-a19
+    type: tool-called
+    tool: get_order
+    by: support
+    args:
+      order_id: A-19
+    result:
+      status: processing
+  - key: says-processing
+    type: text
+    pattern: "(?i)process"
+  - key: no-refund
+    type: tool-not-called
+    tool: refund_order
