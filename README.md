@@ -25,7 +25,7 @@ curl -s localhost:7010/suwageval/turn -H 'content-type: application/json' -d '{
 }'
 ```
 
-## The suwageval contract (v0)
+## The suwageval contract (v1)
 
 `POST /suwageval/turn` — suwageval sends the conversation so far and gets back what the agent
 produced in ONE turn.
@@ -41,7 +41,7 @@ Items, discriminated by `kind`:
 ```json
 {"kind":"UserMessage","text":"..."}
 {"kind":"AssistantMessage","text":"..."}
-{"kind":"ToolCall","id":"...","name":"...","arguments":{}}
+{"kind":"ToolCall","id":"...","name":"...","arguments":{},"agent":"support"}
 {"kind":"ToolResult","callId":"...","content":"...","isError":false}
 {"kind":"Retrieval","query":"...","chunks":[{"text":"...","source":"...","score":0.9}]}
 {"kind":"Event","type":"...","data":{}}
@@ -52,6 +52,9 @@ Items, discriminated by `kind`:
 - This agent has no RAG: `Retrieval` items are accepted and ignored (so are `Event`s).
 - This agent emits one event type: after a successful refund,
   `{"kind":"Event","type":"state.changed","data":{"node":"refunded","orderId":"A-17"}}`.
+- `GET /suwageval/contract` describes the system as v1 does: one LLM agent, `support`, with its
+  model, its system prompt as `config` and its tools; every `ToolCall` it produces names it in
+  `agent`, so checks can say `by: support`. No fixtures, no retrieval.
 - Choices made here: tool arguments are the tools' own parameter names (`order_id`, `reason`);
   `ToolResult.content` is the tool's JSON as text, and `isError` is true when it raised or
   returned `{"error": ...}`. Consecutive `ToolCall`s are replayed as one assistant message.
