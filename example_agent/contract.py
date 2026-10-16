@@ -121,6 +121,15 @@ def _is_error(text: str, exception: str | None) -> bool:
     return isinstance(parsed, dict) and "error" in parsed
 
 
+# The shape of `data` of the one event this agent emits; served by GET /suwageval/contract.
+STATE_CHANGED_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {"node": {"type": "string", "enum": ["refunded"]}, "orderId": {"type": "string"}},
+    "required": ["node", "orderId"],
+    "additionalProperties": False,
+}
+
+
 def add_events(items: list[ConversationItem]) -> list[ConversationItem]:
     """Add the one event this agent emits: state.changed after a successful refund_order."""
     names = {item.id: item.name for item in items if isinstance(item, ToolCall)}

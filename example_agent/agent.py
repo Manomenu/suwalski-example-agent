@@ -16,6 +16,8 @@ Never refund an order without an order id: if the customer has not given one, as
 Always look the order up with get_order before calling refund_order; refund only what the lookup shows is delivered.
 Keep answers short."""
 
+TOOLS = [get_order, refund_order]
+
 
 @lru_cache
 def build_agent() -> Agent:
@@ -25,7 +27,7 @@ def build_agent() -> Agent:
         api_key=os.environ["OPENAI_API_KEY"],
         base_url=os.environ["OPENAI_BASE_URL"],
     )
-    return Agent(client, SYSTEM_PROMPT, name="support", tools=[get_order, refund_order])
+    return Agent(client, SYSTEM_PROMPT, name="support", tools=TOOLS)
 
 
 async def run_turn(history: list[Message]) -> list[Message]:
