@@ -8,6 +8,10 @@ checks:
     tool: refund_order
     args:
       order_id: A-17
+      reason:
+        $judge:
+          description: "Says the item arrived damaged or broken"
+          examples: ["kettle arrived broken", "damaged on delivery"]
     where:
       turn: 1
       after: get_order
