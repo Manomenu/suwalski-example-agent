@@ -95,5 +95,9 @@ checks tool and event names against its contract; without it, it says it skipped
 suwageval validate            # names checked when the agent is up on :7010
 suwageval validate --offline  # structure only
 suwageval push                # the agent, its scenarios and checks
-suwageval run --tag regression --wait
+suwageval run --tag regression --wait   # totals, exit code and the link to the run's page
+suwageval results <runId>     # opens that page in the browser (--json prints the results)
 ```
+
+`push`, `run` and `results` talk to suwageval through its web app (`SUWAGEVAL_URL`, default
+`http://localhost:3230`), so in suwalski-agent-eval both `just server` and `just web` run.
