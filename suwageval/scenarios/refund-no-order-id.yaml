@@ -1,0 +1,11 @@
+key: refund-no-order-id
+tags: [refunds, edge-cases]
+conversation:
+  - user: "I want my money back for the kettle."
+checks:
+  - key: no-refund-without-id
+    type: tool-not-called
+    tool: refund_order
+  - key: asks-for-order-id
+    type: judge
+    criteria: "The answer asks the customer for the order id (or order number)."

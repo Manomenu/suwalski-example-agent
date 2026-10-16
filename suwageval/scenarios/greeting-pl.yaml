@@ -1,5 +1,5 @@
 key: greeting-pl
-tags: [regression, smoke]
+tags: [regression, smoke, polish]
 conversation:
   - user: "Dzień dobry, w czym możecie mi pomóc?"
 checks:
