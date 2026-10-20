@@ -76,6 +76,8 @@ class Fixtures(Item):
 class TurnRequest(Item):
     conversation: list[ConversationItem]
     fixtures: Fixtures | None = None
+    # Sent by suwageval only in a simulated scenario: the same for every turn of one simulated conversation.
+    conversation_id: str | None = None
 
 
 def shop_of(fixtures: Fixtures | None) -> dict[str, dict]:

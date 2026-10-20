@@ -1,6 +1,7 @@
 """The shop's tools: plain functions over a few fake orders held in memory."""
 
 import copy
+from collections import OrderedDict
 from contextvars import ContextVar
 from typing import Annotated
 
@@ -12,10 +13,25 @@ from pydantic import Field
 # turns that run in parallel — or one run after another — never see each other's refunds.
 _orders: ContextVar[dict[str, dict]] = ContextVar("orders")
 
+# The shops of simulated conversations, by suwageval's conversationId: the turns of one conversation
+# go on from the shop the earlier ones left (a refund in turn 2 is still there in turn 3). Only the
+# newest ones are kept; a simulation lasts minutes, and this agent keeps nothing else in memory.
+_conversations: OrderedDict[str, dict[str, dict]] = OrderedDict()
+MAX_CONVERSATIONS = 1000
 
-def start_turn(orders: dict[str, dict]) -> dict[str, dict]:
-    """Give the current turn its own copy of these orders; returns it (tests read it)."""
-    shop = copy.deepcopy(orders)
+
+def start_turn(orders: dict[str, dict], conversation_id: str | None = None) -> dict[str, dict]:
+    """Give the current turn its shop and return it (tests read it): a fresh copy of these orders, or,
+    for a later turn of a simulated conversation, the shop its earlier turns left."""
+    if conversation_id is not None and conversation_id in _conversations:
+        _conversations.move_to_end(conversation_id)
+        shop = _conversations[conversation_id]
+    else:
+        shop = copy.deepcopy(orders)
+        if conversation_id is not None:
+            _conversations[conversation_id] = shop
+            while len(_conversations) > MAX_CONVERSATIONS:
+                _conversations.popitem(last=False)
     _orders.set(shop)
     return shop
 

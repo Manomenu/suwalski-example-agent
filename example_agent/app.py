@@ -26,6 +26,6 @@ def get_runner() -> Runner:
 
 @app.post("/suwageval/turn", response_model_by_alias=True)
 async def turn(request: contract.TurnRequest, runner: Annotated[Runner, Depends(get_runner)]) -> contract.TurnResponse:
-    tools.start_turn(contract.shop_of(request.fixtures))
+    tools.start_turn(contract.shop_of(request.fixtures), request.conversation_id)
     produced = await runner(contract.to_messages(request.conversation))
     return contract.TurnResponse(items=contract.add_events(contract.from_messages(produced, AGENT_NAME)))
