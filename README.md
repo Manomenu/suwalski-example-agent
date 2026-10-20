@@ -10,6 +10,16 @@ the process except the model call.
   agent can find.
 - `refund_order(order_id, reason)` — refunds only a delivered order, otherwise an error.
 
+## Simulated scenarios
+
+`suwageval/scenarios/refund-angry-simulated.yaml` is a simulated scenario: suwageval plays the
+customer described in `continuation.simulatedUser` with a model, for up to `continuation.turns`
+turns, and every turn of one sample carries the same `conversationId`. The agent keeps the shop of
+that conversation under the id (`tools.start_turn`), so a refund in one turn is still there in the
+next; a turn without an id gets a fresh copy, as before. Running it needs a suwageval with
+simulation (branch `feature/multi-turn-scenarios` of suwalski-agent-eval until it is merged) and a
+simulator model configured there.
+
 ## Run
 
 ```sh
@@ -32,7 +42,8 @@ curl -s localhost:7010/suwageval/turn -H 'content-type: application/json' -d '{
 `POST /suwageval/turn` — suwageval sends the conversation so far and gets back what the agent
 produced in ONE turn.
 
-- Request: `{ "conversation": [ item, ... ] }`
+- Request: `{ "conversation": [ item, ... ], "fixtures": {...}, "conversationId": "..." }` —
+  `conversationId` only in a simulated scenario (above).
 - Response 200: `{ "items": [ item, ... ] }` — everything the agent produced in this turn, in
   order: its `ToolCall`s, the matching `ToolResult`s, any `Event`s, and the final
   `AssistantMessage`.

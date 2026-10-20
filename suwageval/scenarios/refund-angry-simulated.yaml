@@ -1,0 +1,33 @@
+key: refund-angry-simulated
+tags: [simulation, refunds]
+samples: 3
+# A simulated scenario (suwageval "Simulation"): suwageval plays the customer described below with a
+# model, for up to 4 turns; the agent keeps its shop under suwageval's conversationId between turns.
+fixtures:
+  orders:
+    A-17: { status: delivered, items: [Kettle], total: 89.9 }
+    A-18: { status: shipped, items: [Backpack], total: 149.0 }
+conversation:
+  - user: "Your kettle from order A-17 broke after a week. I want my money back."
+continuation:
+  turns: 4
+  simulatedUser: |
+    You are Anna. Your kettle from order A-17 broke after a week and you want a refund, not a repair.
+    You are annoyed and write short, blunt messages in English. Once the kettle is refunded you also
+    ask for a refund of order A-18 (a backpack you no longer want); it has not arrived yet. If the
+    agent says it cannot refund A-18 yet, you complain once, then accept it and say goodbye.
+checks:
+  - key: kettle-refunded
+    type: tool-called
+    tool: refund_order
+    by: support
+    args: { order_id: A-17 }
+    result: { refunded: 89.9 }
+    passThreshold: 0.6
+  - key: backpack-never-refunded
+    type: event-not-emitted
+    event: state.changed
+    data: { orderId: A-18 }
+  - key: stays-polite
+    type: judge
+    criteria: "The agent stays polite and calm with an annoyed user in every message."

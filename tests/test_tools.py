@@ -49,6 +49,18 @@ def test_every_turn_starts_from_its_own_copy_of_the_orders():
     assert ORDERS["A-17"]["status"] == "delivered"
 
 
+def test_the_turns_of_one_simulated_conversation_share_its_shop():
+    start_turn(ORDERS, "conversation-1")
+    refund_order.func("A-17", "broken kettle")
+
+    later = start_turn(ORDERS, "conversation-1")
+    other = start_turn(ORDERS, "conversation-2")
+
+    assert later["A-17"]["status"] == "refunded"
+    assert other["A-17"]["status"] == "delivered"
+    assert ORDERS["A-17"]["status"] == "delivered"
+
+
 def test_a_turn_without_orders_finds_none():
     start_turn({})
     assert "not found" in get_order.func("A-17")["error"]

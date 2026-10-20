@@ -51,6 +51,28 @@ def test_the_fixtures_are_the_shop_of_the_turn():
     assert seen == {"orderId": "B-1", **order}
 
 
+def test_a_conversation_id_keeps_the_shop_between_turns():
+    seen = []
+
+    async def runner(history):
+        seen.append(tools.get_order.func("A-17")["status"])
+        if len(seen) == 1:
+            tools.refund_order.func("A-17", "broken")
+        return [Message("assistant", ["ok"])]
+
+    app.dependency_overrides[get_runner] = lambda: runner
+    order = {"status": "delivered", "items": ["Kettle"], "total": 89.9}
+    body = {
+        "conversation": [{"kind": "UserMessage", "text": "Refund A-17"}],
+        "fixtures": {"orders": {"A-17": order}},
+        "conversationId": "c-1",
+    }
+    client = TestClient(app)
+    assert client.post("/suwageval/turn", json=body).status_code == 200
+    assert client.post("/suwageval/turn", json=body).status_code == 200
+    assert seen == ["delivered", "refunded"]
+
+
 def test_fixtures_of_another_shape_are_422():
     body = {"conversation": [{"kind": "UserMessage", "text": "x"}], "fixtures": {"orders": {"B-1": {"status": "lost"}}}}
     assert client().post("/suwageval/turn", json=body).status_code == 422
