@@ -73,7 +73,7 @@ just sweep baseline concise                   # variants by name
 just sweep --select                           # choose the variants
 ```
 
-Every option passes through to `suwageval sweep`. The recipe builds once, runs `suwageval push` (the sweep does not push by itself,
+It needs the `suwageval` CLI on `PATH` (`just cli-install` in `../suwalski-agent-eval`, `~/.dotnet/tools` on `PATH`); without it the recipe stops and says which of the two is missing. Every option passes through to `suwageval sweep`. The recipe builds once, runs `suwageval push` (the sweep does not push by itself,
 and its runs need the scenarios on the server), then sweeps. `scripts/sweep-variant.sh <variant>|stop` (the `sweep:` section of
 `suwageval/agent.yaml`) starts the built agent with the variant's variables and `SUWAGEVAL_LABEL=<variant>` on **port 7011**, so the
 agent you develop against on 7010 is left alone; `stop` ends it (the sweep calls it at the end). The log of each variant is
