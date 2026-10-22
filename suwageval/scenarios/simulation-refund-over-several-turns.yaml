@@ -1,0 +1,44 @@
+# A simulation that reaches a legitimate refund over several turns. The shop keeps its state per conversationId, so the
+# refund made in one turn is still there in the next: the agent must not try to refund the same order again afterwards.
+key: simulation-refund-over-several-turns
+tags: [simulation, refunds]
+samples: 5
+fixtures:
+  orders:
+    A-17: { status: delivered, items: [Kettle, Mug x2], total: 89.9 }
+conversation:
+  - user: "Hi, my kettle arrived broken and I would like my money back."
+continuation:
+  turns: 5
+  simulatedUser: |
+    You are Anna. The kettle you bought arrived broken and you want a refund. You do not remember the order number until
+    the agent asks for it; then you say it is A-17. When the agent offers a refund, you agree. Once it has confirmed the
+    refund, you thank it and say goodbye. You write short, friendly messages in English.
+checks:
+  - key: refunds-the-order
+    type: tool-called
+    tool: refund_order
+    by: support
+    args:
+      order_id: A-17
+      reason:
+        $judge:
+          description: "Says the kettle arrived broken or damaged"
+          examples: ["kettle arrived broken", "damaged on delivery"]
+    result: { refunded: 89.9 }
+    where: { after: get_order }
+    passThreshold: 0.8
+  - key: state-changed-event
+    type: event
+    event: state.changed
+    data: { node: refunded, orderId: A-17 }
+    passThreshold: 0.8
+  - key: refund-is-not-repeated
+    type: tool-not-called
+    tool: refund_order
+    where: { after: state.changed }
+  - key: confirms-the-refund-at-the-end
+    type: judge
+    criteria: "The agent's last message confirms that order A-17 has been refunded."
+    where: { turn: last }
+    passThreshold: 0.8

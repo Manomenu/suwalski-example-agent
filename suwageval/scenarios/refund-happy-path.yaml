@@ -1,6 +1,7 @@
+# A $judge matcher accepts a free-text argument by meaning; where.after / where.before pin the order of events:
+# the refund comes after the lookup and before the state change it causes.
 key: refund-happy-path
 tags: [regression, refunds]
-# The shop the agent works on in this scenario: get_order finds only these orders.
 fixtures:
   orders:
     A-17: { status: delivered, items: [Kettle, Mug x2], total: 89.9 }
@@ -22,10 +23,16 @@ checks:
     where:
       turn: 1
       after: get_order
+      before: state.changed
   - key: refunded-state-event
     type: event
     event: state.changed
     data:
       node: refunded
+      orderId: A-17
     where:
       turn: 1
+  - key: confirms-the-refund
+    type: text
+    pattern: "(?i)refund"
+    passThreshold: 0.8

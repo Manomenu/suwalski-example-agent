@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="ExampleAgent/ExampleAgent.csproj" />
+  <Folder Name="/sdk/">
+    <Project Path="../suwalski-agent-eval/Suwageval.AgentSdk/Suwageval.AgentSdk.csproj" />
+  </Folder>
+  <Project Path="ExampleAgent.Tests/ExampleAgent.Tests.csproj" />
+</Solution>

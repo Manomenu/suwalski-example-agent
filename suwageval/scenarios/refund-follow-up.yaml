@@ -1,0 +1,25 @@
+# The conversation already holds an earlier turn, tool call and result included (its tool calls name their agent):
+# the agent replays it as history and goes on with "Yes, please." instead of looking the order up again.
+key: refund-follow-up
+tags: [regression, refunds]
+fixtures:
+  orders:
+    A-17: { status: delivered, items: [Kettle], total: 89.9 }
+conversation:
+  - user: "Hi, my kettle from order A-17 arrived broken."
+  - tool_call: { id: call-1, name: get_order, arguments: { order_id: A-17 }, agent: support }
+  - tool_result: { call_id: call-1, content: '{"orderId": "A-17", "status": "delivered", "items": ["Kettle"], "total": 89.9}' }
+  - assistant: "I can refund it. Shall I go ahead?"
+  - user: "Yes, please."
+checks:
+  - key: follow-up-refunds
+    type: tool-called
+    tool: refund_order
+    by: support
+    args: { order_id: A-17 }
+    passThreshold: 0.8
+  - key: follow-up-state-event
+    type: event
+    event: state.changed
+    data: { node: refunded, orderId: A-17 }
+    passThreshold: 0.8

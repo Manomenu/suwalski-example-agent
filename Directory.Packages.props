@@ -1,0 +1,16 @@
+<!-- Central package management: every NuGet package and its version is named once, here. -->
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Microsoft Agent Framework: the support agent is a ChatClientAgent over a chat client -->
+    <PackageVersion Include="Microsoft.Agents.AI" Version="1.25.0" />
+    <!-- the OpenAI-compatible chat client behind IChatClient -->
+    <PackageVersion Include="Microsoft.Extensions.AI.OpenAI" Version="10.10.1" />
+    <!-- tests: the agent in process -->
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.12" />
+    <PackageVersion Include="xunit.v3" Version="4.0.2" />
+  </ItemGroup>
+</Project>

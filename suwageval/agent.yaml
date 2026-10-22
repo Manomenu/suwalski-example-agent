@@ -1,5 +1,7 @@
-# The agent under test. Its version (prompt, model, tools, events) is not written here: suwageval
+# The agent under test. Its version (prompt, model, tools, events, retrieval) is not written here: suwageval
 # reads it from the running agent at GET {endpointUrl}/suwageval/contract.
 # Format: https://github.com/Manomenu/suwalski-agent-eval/blob/master/docs/scenario-format.md
-name: example-agent
+name: suwexag
 endpointUrl: http://localhost:7010
+# How many times each scenario is sent by default (a scenario or a check can set its own).
+samples: 3

@@ -1,6 +1,6 @@
+# What must never happen: a shipped order is not refunded, and no state changes.
 key: refund-not-delivered
 tags: [refunds, edge-cases]
-# The shop the agent works on in this scenario: get_order finds only these orders.
 fixtures:
   orders:
     A-18: { status: shipped, items: [Backpack], total: 149.0 }
@@ -10,6 +10,7 @@ checks:
   - key: no-refund-when-shipped
     type: tool-not-called
     tool: refund_order
+    by: support
     where:
       turn: 1
   - key: saw-it-is-shipped

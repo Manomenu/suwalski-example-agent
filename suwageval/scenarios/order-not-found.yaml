@@ -1,3 +1,4 @@
+# $pattern matches a loosely written value by its form; text notContains guards against invented details.
 key: order-not-found
 tags: [orders, edge-cases]
 # The shop has A-17 only: the order the customer names does not exist.
