@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <ItemGroup>
+    <!-- The SDK is not on a feed yet: the sibling checkout is needed. Becomes a PackageReference once the package is published. -->
+    <ProjectReference Include="../../suwalski-agent-eval/Suwageval.AgentSdk/Suwageval.AgentSdk.csproj" />
+    <PackageReference Include="Microsoft.Agents.AI" />
+    <PackageReference Include="Microsoft.Extensions.AI.OpenAI" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="ExampleAgent.Tests" />
+  </ItemGroup>
+</Project>

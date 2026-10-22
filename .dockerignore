@@ -1,0 +1,9 @@
+**/bin/
+**/obj/
+.env
+.env.*
+!.env.example
+.git
+.artifacts/
+.vscode/
+.idea/

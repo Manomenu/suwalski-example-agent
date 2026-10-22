@@ -1,0 +1,26 @@
+# Retrieval: the agent searches the shop's policies; the answer must cite the paragraph it is grounded on (cited),
+# and the search query is judged by meaning ($judge), not by exact words.
+key: shipping-policy
+tags: [policy, regression]
+conversation:
+  - user: "How long does delivery take, and is shipping free?"
+checks:
+  - key: searched-the-policy
+    type: tool-called
+    tool: search_policy
+    by: support
+    args:
+      query:
+        $judge:
+          description: "A short search about delivery time or shipping cost"
+          examples: ["delivery time and shipping cost", "shipping"]
+  - key: cites-the-shipping-policy
+    type: cited
+    sources: [shipping-policy]
+  - key: states-the-delivery-time
+    type: text
+    pattern: "(?i)3\\s*(-|–|to)\\s*5"
+    passThreshold: 0.8
+  - key: states-free-shipping-threshold
+    type: judge
+    criteria: "The answer says shipping is free for orders over 100 PLN and gives no other threshold."

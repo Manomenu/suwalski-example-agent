@@ -1,3 +1,4 @@
+# Judge checks: a verdict only a reader can give (language, no premature promise).
 key: greeting-pl
 tags: [regression, smoke, polish]
 conversation:
@@ -9,4 +10,3 @@ checks:
   - key: promises-nothing-yet
     type: judge
     criteria: "The answer makes no concrete promise (a refund, a discount, a date) before the customer has said what they need."
-

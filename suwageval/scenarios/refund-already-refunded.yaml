@@ -1,6 +1,6 @@
+# event-not-emitted with data: no state.changed for this very order.
 key: refund-already-refunded
 tags: [refunds, edge-cases]
-# The shop the agent works on in this scenario: get_order finds only these orders.
 fixtures:
   orders:
     A-20: { status: refunded, items: [Headphones], total: 199.0 }
@@ -10,6 +10,7 @@ checks:
   - key: no-second-refund
     type: event-not-emitted
     event: state.changed
+    data: { orderId: A-20 }
   - key: explains-already-refunded
     type: judge
     criteria: "The answer tells the customer that order A-20 has already been refunded."

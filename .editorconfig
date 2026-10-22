@@ -1,0 +1,28 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{yml,yaml,csproj,props,slnx,json}]
+indent_size = 2
+
+[*.cs]
+max_line_length = 140
+# Formatting is CSharpier's job (.csharpierrc.json); two formatters would fight.
+dotnet_diagnostic.IDE0055.severity = none
+# ConfigureAwait(false) is for libraries; ASP.NET Core and the test runner have no synchronization context.
+dotnet_diagnostic.CA2007.severity = none
+# Builder APIs return themselves for chaining.
+dotnet_diagnostic.IDE0058.severity = none
+
+# Tests: names are sentences (Refund_changes_the_status), xUnit needs public classes.
+[ExampleAgent.Tests/**.cs]
+dotnet_diagnostic.CA1707.severity = none
+dotnet_diagnostic.CA1515.severity = none
+# TestAgent owns the factory and the chat client it is given and disposes both; the analyzer cannot follow that across calls.
+dotnet_diagnostic.CA2000.severity = none

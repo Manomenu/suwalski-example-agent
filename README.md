@@ -1,24 +1,55 @@
-# example-agent
+# suwexag — the Suwageval example agent
 
-A tiny customer-support agent for a fake shop, and the first "agent under test" for
-[suwageval](../suwalski-agent-eval). Microsoft Agent Framework (`agent-framework`) for the
-agent, FastAPI for the HTTP surface, `uv` for the project. Data is in memory; nothing leaves
-the process except the model call.
+**suwexag** is a tiny customer-support agent for a fake shop (Kettle & Co.), and the example "agent under test" for
+[Suwageval](../suwalski-agent-eval). ASP.NET Core on .NET 10, Microsoft Agent Framework (`Microsoft.Agents.AI`) over any
+OpenAI-compatible endpoint, and the C# SDK `Suwageval.AgentSdk` for the two routes Suwageval talks to. Data is in memory;
+nothing leaves the process except the model call.
 
-- `get_order(order_id)` — status, items, total. The shop has no orders of its own: each turn
-  gets them from the scenario's `fixtures` (below), so a scenario file shows every order the
-  agent can find.
-- `refund_order(order_id, reason)` — refunds only a delivered order, otherwise an error.
+The one LLM agent is named `support` and has three tools:
+
+- `get_order(order_id)`: status, items and total. The shop has no orders of its own: they come from the scenario's `fixtures`.
+- `refund_order(order_id, reason)`: refunds only a delivered order, otherwise an error. A successful refund emits the event
+  `state.changed` (`{"node":"refunded","orderId":"A-17"}`).
+- `search_policy(query)`: a keyword lookup over three policy paragraphs in code (`ExampleAgent/Policy/PolicyIndex.cs`:
+  refunds, shipping, warranty). It makes the agent a small RAG: the turn carries a `Retrieval` item and the answer lists the
+  retrieved paragraphs as its `sources`.
+
+## Requirements
+
+- .NET 10 SDK.
+- **The sibling checkout `../suwalski-agent-eval`**: the SDK is not published to a feed yet, so `ExampleAgent.csproj` has a
+  `ProjectReference` to `../../suwalski-agent-eval/Suwageval.AgentSdk/Suwageval.AgentSdk.csproj`. It becomes a
+  `PackageReference` once the package is published. `ExampleAgent.slnx` also lists the SDK project (solution folder `/sdk/`) so the editor (C# Dev Kit) gives full
+  editing across both repositories; the sibling checkout is part of the solution until the SDK is a `PackageReference`.
+- A model: any OpenAI-compatible endpoint.
 
 ## Run
 
+From source:
+
 ```sh
-uv sync
-cp .env.example .env        # OPENAI_BASE_URL, OPENAI_API_KEY, OPENAI_MODEL — any OpenAI-compatible endpoint
-uv run uvicorn example_agent.app:app --port 7010
+cp .env.example .env        # OPENAI_BASE_URL, OPENAI_API_KEY, OPENAI_MODEL
+just run                    # dotnet run --project ExampleAgent: http://localhost:7010 (appsettings.json)
+curl -s localhost:7010/suwageval/contract
 ```
 
-Gate: `uv run ruff check . && uv run ruff format --check . && uv run pytest` (no model calls).
+From the image `suwexag:local`, for using suwexag without its source or from another stack (the `Dockerfile` takes the SDK
+from the sibling checkout through a named build context):
+
+```sh
+just build-image            # docker build --build-context suwageval=../suwalski-agent-eval -t suwexag:local .
+just run-image              # docker run --rm -p 127.0.0.1:7010:7010 --env-file .env suwexag:local
+```
+
+In the container the agent listens on `0.0.0.0:7010` and needs no `.env` file inside: the settings come from `--env-file`.
+Suwageval's `just tmux-dev` runs suwexag from source first (`dotnet watch --project ExampleAgent` in this repository, reading its
+`.env`) and falls back to the `suwexag:local` image only when the source project is not there; it refuses to start when neither
+exists. `just` lists all recipes.
+
+`.env` is read at start-up into the environment (a variable that is already set wins; `ExampleAgent/DotEnv.cs`). An optional
+`SUWAGEVAL_LABEL` (e.g. the git SHA) names the running version in Suwageval.
+
+A turn by hand:
 
 ```sh
 curl -s localhost:7010/suwageval/turn -H 'content-type: application/json' -d '{
@@ -27,86 +58,73 @@ curl -s localhost:7010/suwageval/turn -H 'content-type: application/json' -d '{
 }'
 ```
 
-## The suwageval contract (v1)
-
-`POST /suwageval/turn` — suwageval sends the conversation so far and gets back what the agent
-produced in ONE turn.
-
-- Request: `{ "conversation": [ item, ... ] }`
-- Response 200: `{ "items": [ item, ... ] }` — everything the agent produced in this turn, in
-  order: its `ToolCall`s, the matching `ToolResult`s, any `Event`s, and the final
-  `AssistantMessage`.
-- 422 with a message for a malformed request.
-
-Items, discriminated by `kind`:
-
-```json
-{"kind":"UserMessage","text":"..."}
-{"kind":"AssistantMessage","text":"..."}
-{"kind":"ToolCall","id":"...","name":"...","arguments":{},"agent":"support"}
-{"kind":"ToolResult","callId":"...","content":"...","isError":false}
-{"kind":"Retrieval","query":"...","chunks":[{"text":"...","source":"...","score":0.9}]}
-{"kind":"Event","type":"...","data":{}}
-```
-
-- Incoming `ToolCall`/`ToolResult` items from earlier turns are replayed into the agent's
-  history as they were; the agent does not re-run them.
-- This agent has no RAG: `Retrieval` items are accepted and ignored (so are `Event`s).
-- This agent emits one event type: after a successful refund,
-  `{"kind":"Event","type":"state.changed","data":{"node":"refunded","orderId":"A-17"}}`.
-- `GET /suwageval/contract` describes the system as v1 does: one LLM agent, `support`, with its
-  model, its system prompt as `config` and its tools; every `ToolCall` it produces names it in
-  `agent`, so checks can say `by: support`. No retrieval.
-- Fixtures: `{"orders": {"A-17": {"status": "delivered", "items": ["Kettle"], "total": 89.9}}}`,
-  the shop of that turn (`context.fixturesSchema` is their JSON Schema; another shape is a 422).
-  The model never sees them: it learns about an order only by calling `get_order`, as it would
-  from a real shop. A turn without fixtures has an empty shop.
-- Choices made here: tool arguments are the tools' own parameter names (`order_id`, `reason`);
-  `ToolResult.content` is the tool's JSON as text, and `isError` is true when it raised or
-  returned `{"error": ...}`. Consecutive `ToolCall`s are replayed as one assistant message.
-
-The mapping between these items and Agent Framework's `Message`/`Content` lives in
-`example_agent/contract.py`, tested in `tests/test_contract.py`.
-
-## `GET /suwageval/contract` — what this agent is
-
-suwageval does not read a version from a file: it asks the running agent. The answer is built
-from the agent's real definition (`example_agent/description.py`): the `SYSTEM_PROMPT` constant,
-the model name from `OPENAI_MODEL`, the tools straight from the Agent Framework tool objects
-(name, description and the JSON Schema Agent Framework derives from the signature), no
-retrieval, the one event `state.changed` with the schema of its `data`
-(`contract.STATE_CHANGED_SCHEMA`), and a `label` when `SUWAGEVAL_LABEL` is set (e.g. the git
-SHA). No model call.
+## Gate
 
 ```sh
-curl -s localhost:7010/suwageval/contract
+dotnet build        # warnings are errors: nullable, every analyzer (latest-all), code style
+dotnet test         # xUnit v3; no model calls (a scripted chat client stands in for the model)
+dotnet tool restore && dotnet csharpier check .    # formatting (dotnet csharpier format . fixes it)
 ```
 
-Change the prompt, a tool or `OPENAI_MODEL` and restart: the next run is a new version; the
-same agent again is the same version.
+## What it shows of the SDK
 
-## `suwageval/` — what this agent tells suwageval
+| SDK feature | Where |
+| --- | --- |
+| `IAgentContractSource`, `AgentContract` | `Support/SupportContractSource.cs`: the contract is built from the real definition (prompt, model name, the tools' JSON Schemas as the model gets them) |
+| `ITurnHandler`, `MapSuwagevalAgent()` | `Support/SupportTurnHandler.cs`, `Program.cs` |
+| `request.FixturesAs<T>()` | the turn reads the scenario's orders as `ShopFixtures`; a shape it does not declare is a 400 |
+| `ContractSchema.ObjectSchema` / `EnumSchema<T>()` | `Shop/ShopFixtures.cs` (`context.fixturesSchema`) and the schema of the `state.changed` event's data |
+| `request.HistoryTurns()` | `Support/ChatMapping.cs` replays earlier turns, every tool call paired with its result, as chat history |
+| `TurnRejectedException` | a history that cannot be one (thrown by the SDK), tool arguments that are not an object; the turn is answered 400 with the reason |
+| `request.Correlation` | the `Suwageval-Run-Id`, `-Scenario` and `-Sample` headers go to the log, never into what the agent does |
+| `request.ConversationId` | `Shop/ShopStore.cs`: see below |
+| `AgentContractRules.Problems` | `ExampleAgent.Tests/ContractTests.cs` asserts the served contract has none |
+| `Retrieval` items, `usesRetrieval` + `dataVersion` | `Policy/PolicyIndex.cs` (the data version is a hash of the paragraphs), `Support/ChatMapping.cs` |
 
-The files suwageval reads from this repository, in the format of
-[docs/scenario-format.md](https://github.com/Manomenu/suwalski-agent-eval/blob/master/docs/scenario-format.md):
+**State per conversation.** Suwageval runs scenarios in parallel, so a conversation must not see another one's refunds. Without
+a `conversationId` every turn starts from a fresh copy of the fixtures. A simulated conversation sends the same id with every
+turn: its first turn starts fresh, later turns go on from what earlier ones left (an order refunded in turn 2 is refunded in
+turn 3). The shop is kept in memory and never evicted: fine for an example, not for production.
 
-- `agent.yaml` — the agent's `name` and `endpointUrl`, nothing else (a `version:` key is an
-  error: the version is the contract above).
-- `scenarios/*.yaml` — one scenario per file (`key`, `tags`, `conversation`) with its `checks`
-  inside: `tool-called`, `tool-not-called`, `event`, `text`. (The judge check this agent had in
-  its draft comes after the MVP.)
+## `suwageval/`: agent.yaml and scenarios
 
-Check them with the `suwageval` CLI (`just cli-install` in suwalski-agent-eval installs it; or
-`just cli validate` there, pointing at this folder). With the agent running, `validate` also
-checks tool and event names against its contract; without it, it says it skipped them:
+Format: [docs/scenario-format.md](https://github.com/Manomenu/suwalski-agent-eval/blob/master/docs/scenario-format.md). The
+agent's version is not written down: Suwageval reads it from `GET /suwageval/contract`.
+
+| Scenario | Shows |
+| --- | --- |
+| `greeting-pl` | `judge` checks |
+| `order-status` | `fixtures`, `tool-called` with `args` and `result`, `by: support`, `text` (`pattern`), `tool-not-called`, a check's own `samples` |
+| `order-not-found` | `$pattern` in `args` and `result`, `text` `notContains` |
+| `refund-happy-path` | `$judge` matcher for a free-text argument, `where` with `turn`, `after` and `before`, `event` with `data`, `passThreshold` |
+| `refund-follow-up` | a conversation that already holds tool calls and results (replayed as history) |
+| `refund-not-delivered` | what must never happen: `tool-not-called`, `event-not-emitted` |
+| `refund-already-refunded` | `event-not-emitted` with `data` |
+| `refund-no-order-id` | the agent must ask instead of acting |
+| `shipping-policy` | retrieval: `cited`, `$judge` on the search query |
+| `simulation-angry-refund-not-delivered` | simulation: an angry customer demands a refund of a shipped order; it must never be refunded |
+| `simulation-refund-over-several-turns` | simulation: a legitimate refund reached over several turns; refund called after the lookup, the state event, and no refund after `state.changed` (state kept per `conversationId`) |
+
+Every scenario has `tags` (`regression`, `smoke`, `refunds`, `simulation`, ...). The simulations need the server to have a
+simulator model configured (`Simulation:Model`), see the Simulation section of the format document.
 
 ```sh
 suwageval validate            # names checked when the agent is up on :7010
 suwageval validate --offline  # structure only
 suwageval push                # the agent, its scenarios and checks
-suwageval run --tag regression --wait   # totals, exit code and the link to the run's page
-suwageval results <runId>     # opens that page in the browser (--json prints the results)
+suwageval run --tag regression --wait
+suwageval run --tag simulation --wait
 ```
 
-`push`, `run` and `results` talk to suwageval through its web app (`SUWAGEVAL_URL`, default
-`http://localhost:3230`), so in suwalski-agent-eval both `just server` and `just web` run.
+`push` and `run` talk to Suwageval through its web app (`SUWAGEVAL_URL`, default `http://localhost:3230`).
+
+## Layout
+
+```
+ExampleAgent/            the agent (Program.cs, DotEnv.cs, ModelSettings.cs)
+  Support/               the agent, its contract, the turn handler, the mapping to chat messages
+  Shop/                  orders, fixtures, tools, the per-conversation store
+  Policy/                the policy lookup
+ExampleAgent.Tests/      xUnit v3 tests
+suwageval/               agent.yaml and the scenarios
+```

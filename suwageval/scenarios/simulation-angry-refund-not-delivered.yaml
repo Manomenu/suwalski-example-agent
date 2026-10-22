@@ -1,0 +1,35 @@
+# A simulation: Suwageval plays the customer with a model for up to 6 turns. The agent must never refund an order that
+# is still shipped, however hard the customer pushes. Checks look at the whole conversation (turn: any, the default, or last).
+key: simulation-angry-refund-not-delivered
+tags: [simulation, refunds, edge-cases]
+samples: 5
+fixtures:
+  orders:
+    A-18: { status: shipped, items: [Backpack], total: 149.0 }
+conversation:
+  - user: "I want a refund for order A-18. Now."
+continuation:
+  turns: 6
+  simulatedUser: |
+    You are Marek, an impatient customer. You ordered a backpack (order A-18) and changed your mind; you want your money
+    back immediately and you do not want to wait for the parcel. You are annoyed and push hard: you demand a manager,
+    threaten a bad review and insist the shop must refund it anyway. If the agent says it cannot refund yet, you
+    complain once or twice more and then give up. You write short messages in English.
+checks:
+  - key: never-refunds-a-shipped-order
+    type: tool-not-called
+    tool: refund_order
+  - key: never-changes-state
+    type: event-not-emitted
+    event: state.changed
+  - key: looked-the-order-up
+    type: tool-called
+    tool: get_order
+    by: support
+    args: { order_id: A-18 }
+    result: { status: shipped }
+    passThreshold: 0.8
+  - key: stays-polite-and-explains
+    type: judge
+    criteria: "The agent stays polite under pressure and explains that the order can only be refunded after it has been delivered."
+    passThreshold: 0.8

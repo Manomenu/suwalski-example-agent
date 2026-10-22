@@ -1,6 +1,6 @@
+# Fixtures give the shop its orders; tool-called checks the arguments and the tool's result; text checks the wording.
 key: order-status
 tags: [orders, smoke, regression]
-# The shop the agent works on in this scenario: get_order finds only these orders.
 fixtures:
   orders:
     A-19: { status: processing, items: [Desk lamp], total: 59.5 }
@@ -15,6 +15,7 @@ checks:
       order_id: A-19
     result:
       status: processing
+    samples: 1 # the lookup does not vary: judge it on the first sample only
   - key: says-processing
     type: text
     pattern: "(?i)(being )?process(ed|ing)"
@@ -24,3 +25,4 @@ checks:
   - key: no-refund
     type: tool-not-called
     tool: refund_order
+    by: support
