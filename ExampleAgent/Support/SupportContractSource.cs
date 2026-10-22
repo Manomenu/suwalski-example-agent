@@ -10,7 +10,7 @@ namespace ExampleAgent.Support;
 /// What this agent tells Suwageval about itself (<c>GET /suwageval/contract</c>), built from its real definition: the prompt,
 /// the model's name, the tools' schemas as the model gets them. No model call. Change any of it and the next run is a new version.
 /// </summary>
-internal sealed class SupportContractSource(ModelSettings model, IConfiguration configuration) : IAgentContractSource
+internal sealed class SupportContractSource(ModelSettings model, PromptSettings prompt, IConfiguration configuration) : IAgentContractSource
 {
     /// <summary>The event emitted after a successful refund; its <c>data</c> follows <see cref="StateChangedSchema"/>.</summary>
     public const string StateChanged = "state.changed";
@@ -37,7 +37,7 @@ internal sealed class SupportContractSource(ModelSettings model, IConfiguration 
                     {
                         Name = SupportAgent.Name,
                         Model = new ModelDefinition { Name = model.Model },
-                        Config = SupportAgent.SystemPrompt,
+                        Config = prompt.Text,
                         Tools =
                         [
                             .. new ShopTools(Shop.Shop.From(null))

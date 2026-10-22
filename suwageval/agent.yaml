@@ -5,3 +5,9 @@ name: suwexag
 endpointUrl: http://localhost:7010
 # How many times each scenario is sent by default (a scenario or a check can set its own).
 samples: 3
+# `suwageval sweep`: one run per variant file in variants/, against the sweep instance on :7011 (scripts/sweep-variant.sh).
+sweep:
+  variantsDir: variants
+  reconfigure: ./scripts/sweep-variant.sh {variant}
+  restore: ./scripts/sweep-variant.sh stop
+  waitSeconds: 60

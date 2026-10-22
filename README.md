@@ -58,6 +58,27 @@ curl -s localhost:7010/suwageval/turn -H 'content-type: application/json' -d '{
 }'
 ```
 
+## Sweep
+
+`suwageval sweep` runs the scenarios once per variant of the agent and puts the runs in one run group, to compare them on the web.
+Two variants live in `suwageval/variants/` (the name is the file name): `baseline` (`SUWEXAG_PROMPT=default`, the prompt as it is)
+and `concise` (`SUWEXAG_PROMPT=concise`: the same rules, answers of one or two sentences). The prompt is the agent's `config` in the
+contract, so each is a version of its own in Suwageval. `SUWEXAG_PROMPT` is optional (unset means `default`; any other value stops
+the agent at start).
+
+```sh
+just sweep                                    # every scenario, both variants
+just sweep --tag refunds --tag simulation     # scenarios with any of the tags
+just sweep baseline concise                   # variants by name
+just sweep --select                           # choose the variants
+```
+
+Every option passes through to `suwageval sweep`. The recipe builds once, runs `suwageval push` (the sweep does not push by itself,
+and its runs need the scenarios on the server), then sweeps. `scripts/sweep-variant.sh <variant>|stop` (the `sweep:` section of
+`suwageval/agent.yaml`) starts the built agent with the variant's variables and `SUWAGEVAL_LABEL=<variant>` on **port 7011**, so the
+agent you develop against on 7010 is left alone; `stop` ends it (the sweep calls it at the end). The log of each variant is
+`.artifacts/sweep-<variant>.log`. The sweep prints a row per variant and a link (the run group) to compare them on the web.
+
 ## Gate
 
 ```sh

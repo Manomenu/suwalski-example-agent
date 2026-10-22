@@ -33,3 +33,12 @@ test:
 fmt:
     dotnet tool restore
     dotnet csharpier format .
+
+# Real sweep over the variants in suwageval/variants/ (builds once, pushes the scenarios, then sweeps a sweep instance on :7011); options pass through: just sweep --tag refunds --tag simulation
+[group('check')]
+sweep *args:
+    @[ -d ../suwalski-agent-eval ] || { echo "../suwalski-agent-eval is missing: the sweep runs the Suwageval CLI from the sibling checkout" >&2; exit 1; }
+    @[ -f .env ] || { echo "no .env here: cp .env.example .env and fill it in" >&2; exit 1; }
+    dotnet build --nologo -v q
+    dotnet run --project ../suwalski-agent-eval/Suwageval.Cli -- push
+    dotnet run --project ../suwalski-agent-eval/Suwageval.Cli -- sweep --endpoint http://localhost:7011 {{args}}
