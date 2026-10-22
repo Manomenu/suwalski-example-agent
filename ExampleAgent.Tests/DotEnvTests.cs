@@ -18,4 +18,15 @@ public class DotEnvTests
 
     [Fact]
     public void A_missing_file_is_fine() => DotEnv.Load("does-not-exist.env");
+
+    [Fact]
+    public void The_nearest_file_above_the_directory_is_found()
+    {
+        var root = Directory.CreateTempSubdirectory();
+        var project = root.CreateSubdirectory("ExampleAgent");
+        File.WriteAllText(Path.Combine(root.FullName, ".env"), "");
+
+        Assert.Equal(Path.Combine(root.FullName, ".env"), DotEnv.Find(project.FullName));
+        root.Delete(recursive: true);
+    }
 }

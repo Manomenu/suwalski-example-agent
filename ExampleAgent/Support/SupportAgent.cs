@@ -10,7 +10,8 @@ internal static class SupportAgent
     /// <summary>Its name in the contract and on every tool call it makes (<c>by: support</c> in a check).</summary>
     public const string Name = "support";
 
-    public const string SystemPrompt = """
+    /// <summary>The prompt of the <c>default</c> variant (<c>SUWEXAG_PROMPT</c>).</summary>
+    public const string DefaultPrompt = """
         You are a polite customer support agent for Kettle & Co., an online shop.
         Answer in the language the customer writes in.
         Use get_order to look up an order before you talk about it or refund it.
@@ -20,10 +21,21 @@ internal static class SupportAgent
         Keep answers short.
         """;
 
+    /// <summary>The prompt of the <c>concise</c> variant: the same rules, shorter answers.</summary>
+    public const string ConcisePrompt = """
+        You are a polite customer support agent for Kettle & Co., an online shop.
+        Answer in the language the customer writes in.
+        Use get_order to look up an order before you talk about it or refund it.
+        Never refund an order without an order id: if the customer has not given one, ask for it.
+        Always look the order up with get_order before calling refund_order; refund only what the lookup shows is delivered.
+        For a question about refunds, shipping or the warranty, use search_policy and answer only from what it returns.
+        Answer in one or two sentences, straight to the point: no greetings, no pleasantries, no extra offers.
+        """;
+
     /// <summary>The agent over one shop (its tools work on that shop's orders).</summary>
-    public static AIAgent Create(IChatClient chatClient, Shop.Shop shop)
+    public static AIAgent Create(IChatClient chatClient, Shop.Shop shop, string prompt)
     {
         ArgumentNullException.ThrowIfNull(shop);
-        return new ChatClientAgent(chatClient, SystemPrompt, Name, description: null, tools: [.. new ShopTools(shop).ToFunctions()]);
+        return new ChatClientAgent(chatClient, prompt, Name, description: null, tools: [.. new ShopTools(shop).ToFunctions()]);
     }
 }
