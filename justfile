@@ -2,7 +2,7 @@
 
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
-# The local self-hosted Langfuse: just langfuse up | status | down | prune | setup
+# The local self-hosted Langfuse: just langfuse up | status | info | down | prune | setup
 mod langfuse 'langfuse/langfuse.just'
 
 [private]

@@ -26,3 +26,7 @@ status:
 # This machine's setup, never committed: the model definition from .env, the official skill into .claude/skills/langfuse and the keys into .claude/settings.local.json
 setup:
     @langfuse/scripts/setup.sh
+
+# What you need to use it: address, login and password, the project's API keys, where traces go
+info:
+    @langfuse/scripts/info.sh
