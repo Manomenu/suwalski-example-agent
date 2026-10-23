@@ -184,12 +184,13 @@ source `Suwexag`; the HTTP layer is never traced (no ASP.NET Core or HttpClient 
 - One trace per turn: the root span `turn`; under it a generation per model call (`chat <model>`, with the messages and the
   token usage), a tool per tool call and a `retrieval` span for `search_policy`.
 - The session is the conversation: `langfuse.session.id` = the turn's `conversationId` (one per scenario sample).
-- What Suwageval sends in the `baggage` header lands on every span: environment `suwageval`, metadata `suwageval_run_id`,
-  `suwageval_scenario`, `suwageval_scenario_type`, `suwageval_sample`, `suwageval_run_group`, `suwageval_run_tags`,
-  `suwageval_scenario_tags`, and no Langfuse tags: a run id, a group or a scenario tag (one per task) can be new on any run,
+- What Suwageval sends in the `baggage` header lands on every span: environment `suwageval`, metadata under the very keys
+  Suwageval sends (`suwageval.run.id`, `suwageval.run.group`, `suwageval.run.tags`, `suwageval.scenario.key`,
+  `suwageval.scenario.type`, `suwageval.scenario.sample`, `suwageval.scenario.tags`; this app adds Langfuse's
+  `langfuse.trace.metadata.` prefix), the service `suwexag`, and no Langfuse tags: a run id, a group or a scenario tag (one per task) can be new on any run,
   and as a tag each would stay in Langfuse's tag list for good, so all of them are metadata. A turn from anything else has
   no such values and the default environment.
-- To find a run's traces: filter the metadata `suwageval_run_id` = the run id (Tracing, then Filter, Metadata); a sample's
+- To find a run's traces: filter the metadata `suwageval.run.id` = the run id (Tracing, then Filter, Metadata); a sample's
   conversation is the session with its conversation id. The attribute names are Langfuse's
   ([OpenTelemetry docs](https://langfuse.com/integrations/native/opentelemetry)).
 - `just langfuse up` ends with `setup`, so there is no step in the UI; sign-up is disabled, only the init user exists.

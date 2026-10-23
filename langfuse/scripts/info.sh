@@ -26,4 +26,4 @@ if [ -d .claude/skills/langfuse ] && [ -f .claude/settings.local.json ]; then
 else
   echo "Claude Code: not set up (just langfuse setup)"
 fi
-echo "a run's traces: filter metadata suwageval_run_id = <run id>; one sample = one session (its conversation id)"
+echo "a run's traces: filter metadata suwageval.run.id = <run id>; one sample = one session (its conversation id)"

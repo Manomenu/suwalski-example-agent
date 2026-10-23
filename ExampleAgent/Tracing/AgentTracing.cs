@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text;
+using OpenTelemetry.Resources;
 using OpenTelemetry;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Trace;
@@ -38,6 +39,9 @@ internal static class AgentTracing
     /// Adds the tracer provider. What it listens to and exports is decided when it is built (the configuration is final by then):
     /// without Langfuse's keys it listens to nothing, so tracing costs nothing.
     /// </summary>
+    /// <summary>The service name the traces carry (otherwise OpenTelemetry says <c>unknown_service:dotnet</c>).</summary>
+    public const string ServiceName = "suwexag";
+
     public static void AddAgentTracing(this IServiceCollection services)
     {
         services.AddOpenTelemetry().WithTracing(_ => { });
@@ -60,6 +64,7 @@ internal static class AgentTracing
                     Headers = header,
                 };
                 builder
+                    .ConfigureResource(resource => resource.AddService(ServiceName))
                     .AddSource(SourceName)
                     .AddProcessor(new SuwagevalTraceProcessor())
                     .AddProcessor(new BatchActivityExportProcessor(new OtlpTraceExporter(options)));
@@ -81,7 +86,7 @@ internal static class AgentTracing
         SetBaggage(turn, SuwagevalBaggage.RunId, correlation.RunId);
         SetBaggage(turn, SuwagevalBaggage.ScenarioKey, correlation.Scenario);
         SetBaggage(turn, SuwagevalBaggage.ScenarioTypeKey, correlation.ScenarioType?.ToString());
-        SetBaggage(turn, SuwagevalBaggage.Sample, correlation.Sample);
+        SetBaggage(turn, SuwagevalBaggage.ScenarioSample, correlation.Sample);
         SetBaggage(turn, SuwagevalBaggage.ScenarioTags, string.Join(',', correlation.ScenarioTags));
         SetBaggage(turn, SuwagevalBaggage.RunTags, string.Join(',', correlation.RunTags));
         SetBaggage(turn, SuwagevalBaggage.RunGroup, correlation.RunGroup);
