@@ -2,6 +2,11 @@
 
 set working-directory := ".."
 
+# `just langfuse` alone lists the recipes instead of running one.
+[private]
+default:
+    @just --list langfuse --unsorted
+
 # Start Langfuse (generates its secrets in .env once) and wait until it answers on http://localhost:3290
 up:
     @langfuse/scripts/up.sh
@@ -18,6 +23,6 @@ prune *args:
 status:
     @langfuse/scripts/status.sh
 
-# Set Claude Code up for Langfuse: the official skill into .claude/skills/langfuse and the keys into .claude/settings.local.json
+# This machine's setup, never committed: the model definition from .env, the official skill into .claude/skills/langfuse and the keys into .claude/settings.local.json
 setup:
     @langfuse/scripts/setup.sh
