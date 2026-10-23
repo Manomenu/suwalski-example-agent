@@ -185,11 +185,12 @@ source `Suwexag`; the HTTP layer is never traced (no ASP.NET Core or HttpClient 
   token usage), a tool per tool call and a `retrieval` span for `search_policy`.
 - The session is the conversation: `langfuse.session.id` = the turn's `conversationId` (one per scenario sample).
 - What Suwageval sends in the `baggage` header lands on every span: environment `suwageval`, metadata `suwageval_run_id`,
-  `suwageval_scenario`, `suwageval_scenario_type`, `suwageval_sample`, `suwageval_run_group`, and the tags
-  `suwageval_run:<id>`, `suwageval_scenario_tag:<tag>`, `suwageval_run_tag:<tag>`, `suwageval_run_group:<group>`. A turn from
-  anything else has no such values and the default environment.
-- To find a run's traces: filter the tag `suwageval_run:<run id>` (Tracing, then Filter, Tags); a sample's conversation is the
-  session with its conversation id. The attribute names are Langfuse's
+  `suwageval_scenario`, `suwageval_scenario_type`, `suwageval_sample`, `suwageval_run_group`, `suwageval_run_tags`, and as
+  tags only the scenario's own tags, `suwageval_scenario_tag:<tag>`: a tag comes from a small fixed set, while a run id or a
+  group is new every time and would grow Langfuse's tag list for good, so those stay metadata. A turn from anything else has
+  no such values and the default environment.
+- To find a run's traces: filter the metadata `suwageval_run_id` = the run id (Tracing, then Filter, Metadata); a sample's
+  conversation is the session with its conversation id. The attribute names are Langfuse's
   ([OpenTelemetry docs](https://langfuse.com/integrations/native/opentelemetry)).
 - `just langfuse up` ends with `setup`, so there is no step in the UI; sign-up is disabled, only the init user exists.
   `setup` holds what is this machine's and never committed: the model definition for `OPENAI_MODEL` from `.env` (prices 0,
