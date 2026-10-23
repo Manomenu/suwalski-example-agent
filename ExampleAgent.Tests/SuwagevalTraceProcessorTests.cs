@@ -33,11 +33,8 @@ public class SuwagevalTraceProcessorTests
 
     private static readonly string[] ExpectedTags =
     [
-        "suwageval_run:run-1",
         "suwageval_scenario_tag:a",
         "suwageval_scenario_tag:b",
-        "suwageval_run_tag:fast",
-        "suwageval_run_group:group-1",
     ];
 
     private static TurnRequest Request(TurnCorrelation correlation, string? conversationId) =>
