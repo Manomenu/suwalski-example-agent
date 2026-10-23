@@ -190,26 +190,28 @@ public class SuwagevalTraceProcessorTests
         );
     }
 
-    [Fact]
-    public void The_turn_carries_the_conversation_and_the_answer_as_input_and_output_on_the_observation_and_the_trace()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void The_turn_carries_the_new_user_message_and_the_answer_only_with_sensitive_data(bool sensitive)
     {
         var (provider, spans) = Start();
         using (provider)
         {
             var request = new TurnRequest { Conversation = [new UserMessage { Text = "Hi" }] };
             using var turn = AgentTracing.StartTurn(request);
-            AgentTracing.RecordInput(turn, request);
-            AgentTracing.RecordOutput(turn, new TurnResponse { Items = [new AssistantMessage { Text = "Hello" }] });
+            AgentTracing.RecordInput(turn, request, sensitive);
+            AgentTracing.RecordOutput(turn, new TurnResponse { Items = [new AssistantMessage { Text = "Hello" }] }, sensitive);
         }
 
         var span = Assert.Single(spans.Ended);
         foreach (var key in new[] { "langfuse.observation.input", "langfuse.trace.input" })
         {
-            Assert.Contains("\"text\":\"Hi\"", (string)span.GetTagItem(key)!, StringComparison.Ordinal);
+            Assert.Equal(sensitive ? "Hi" : null, span.GetTagItem(key));
         }
         foreach (var key in new[] { "langfuse.observation.output", "langfuse.trace.output" })
         {
-            Assert.Contains("\"text\":\"Hello\"", (string)span.GetTagItem(key)!, StringComparison.Ordinal);
+            Assert.Equal(sensitive ? "Hello" : null, span.GetTagItem(key));
         }
     }
 
@@ -221,7 +223,7 @@ public class SuwagevalTraceProcessorTests
         {
             using var turn = AgentTracing.StartTurn(Request(TurnCorrelation.None, null));
             var data = JsonSerializer.SerializeToElement(new { node = "refunded", orderId = "A-17" });
-            AgentTracing.RecordOutput(turn, new TurnResponse { Items = [new Event { Type = "state.changed", Data = data }] });
+            AgentTracing.RecordOutput(turn, new TurnResponse { Items = [new Event { Type = "state.changed", Data = data }] }, true);
         }
 
         var turnSpan = Assert.Single(spans.Ended, span => span.OperationName == "turn");

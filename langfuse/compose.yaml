@@ -90,9 +90,9 @@ services:
       retries: 10
       start_period: 1s
 
-  # MinIO's own images are no longer published with version tags; Chainguard's only has `latest`, so it is pinned by digest.
+  # MinIO's own images are no longer published with version tags; Chainguard's only has `latest`, so it is pinned by digest: the multi-arch index built 2026-10-08, at least two weeks old (the repo's rule for image versions).
   minio:
-    image: cgr.dev/chainguard/minio@sha256:d88920d6a50bd0b088223b688be3b76c63e6205dbe494437f67ba1240ea12880
+    image: cgr.dev/chainguard/minio@sha256:5ed9207c9d1bf50e2b0aa917ffb0fede5507651178b7bd4119ff75319e7fdeec
     restart: unless-stopped
     entrypoint: sh
     # create the 'langfuse' bucket before starting the service

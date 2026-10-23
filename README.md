@@ -167,25 +167,31 @@ just langfuse setup     # sets Claude Code up for it (below)
   `.env` (default `suwexag@example.com`), password `LANGFUSE_USER_PASSWORD` in `.env`. The organization and project
   `suwexag` and the project's API keys (`LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`) exist after the first start
   (Langfuse's `LANGFUSE_INIT_*` variables); the secrets are generated into the gitignored `.env`, names in `.env.example`.
-- The OpenTelemetry exporter settings are committed in `ExampleAgent/appsettings.json`
+- The standard OpenTelemetry exporter settings are committed in `ExampleAgent/appsettings.json`
   (`OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:3290/api/public/otel`, `OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf`;
-  Langfuse takes OTLP over HTTP, not gRPC). The auth header is built from the keys in `.env`, never committed.
+  Langfuse takes OTLP over HTTP, not gRPC). The agent registers `UseOtlpExporter()`, which reads them (and appends `/v1/traces`
+  to the endpoint); at start it also puts `OTEL_EXPORTER_OTLP_HEADERS` (`Authorization=Basic <public:secret>`) into the
+  configuration, computed from the keys in `.env`, never committed.
 - `just langfuse up` ends with `setup`; `just langfuse setup` alone re-runs it. For Claude Code it copies the official Langfuse skill (github.com/langfuse/skills, `skills/langfuse`, pinned
   to a commit in `langfuse/scripts/setup.sh`) into `.claude/skills/langfuse/` (committed), and writes `LANGFUSE_PUBLIC_KEY`,
   `LANGFUSE_SECRET_KEY` and `LANGFUSE_BASE_URL` into `.claude/settings.local.json` (gitignored). Restart Claude Code afterwards.
 
 ### Tracing
 
+Message contents, tool arguments and results and the turn's input and output are on the spans only with `Tracing:SensitiveData`
+(`Tracing__SensitiveData=true` in `.env`; `false` in `appsettings.json`: in a real app they are personal data). Without it the
+turn has no input or output at all. Tracing samples 100% here, which is right for evaluation: a production app would set a
+sampling ratio (`OTEL_TRACES_SAMPLER`, `OTEL_TRACES_SAMPLER_ARG`).
+
 The agent sends its traces to this Langfuse over OTLP/HTTP when `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY` are in `.env`
 (otherwise tracing is off and the log says so once; the agent works the same). Only the agent's own spans exist, from the
 source `Suwexag`; the HTTP layer is never traced (no ASP.NET Core or HttpClient instrumentation), and no `traceparent` or
 `baggage` is forwarded to the model provider.
 
-- One trace per turn: the root span `turn` (Langfuse type `agent`, with the conversation the agent got as input and its answer
-  as output; the same on the trace, `langfuse.trace.input` / `langfuse.trace.output`, so the trace list shows question and
-  answer). Under it: `orchestrate_tools` (`chain`: the tool-calling loop), a generation per model call (`chat <model>`, with
-  the messages and the token usage), a `tool` per tool call (with its arguments and result: the chat client records them,
-  `EnableSensitiveData`, this is test data), a `retrieval` span for `search_policy` (`retriever`; output: the found document ids
+- One trace per turn: the root span `turn` (Langfuse type `agent`, with the new user message of the turn as input and the
+  agent's answer text as output (its items as JSON when it said nothing); the same on the trace, `langfuse.trace.input` /
+  `langfuse.trace.output`, so the trace list shows question and answer; the full history is on the generation spans). Under it: `orchestrate_tools` (`chain`: the tool-calling loop), a generation per model call (`chat <model>`, with
+  the messages and the token usage), a `tool` per tool call (with its arguments and result: the chat client records them), a `retrieval` span for `search_policy` (`retriever`; output: the found document ids
   with their scores) and an `event` observation named after each event the agent emits to Suwageval (`state.changed`; the
   event's data as input and output).
 - Levels: `ERROR` (`langfuse.observation.level` + `status_message`) on a span that threw, on the turn when it threw, and on

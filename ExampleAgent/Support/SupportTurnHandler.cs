@@ -11,6 +11,7 @@ internal sealed partial class SupportTurnHandler(
     IChatClient chatClient,
     ShopStore shops,
     PromptSettings prompt,
+    TracingSettings tracing,
     ILogger<SupportTurnHandler> logger
 ) : ITurnHandler
 {
@@ -21,16 +22,16 @@ internal sealed partial class SupportTurnHandler(
         // The headers are for correlation only: they go to the logs, never into what the agent does.
         LogTurn(request.Correlation.RunId, request.Correlation.Scenario, request.Correlation.Sample, request.ConversationId);
 
-        AgentTracing.RecordInput(turn, request);
+        AgentTracing.RecordInput(turn, request, tracing.SensitiveData);
         try
         {
             var messages = ChatMapping.ToMessages(request); // throws TurnRejectedException for a history that cannot be one
             var shop = shops.For(request.ConversationId, request.FixturesAs<ShopFixtures>());
             var response = await SupportAgent
-                .Create(chatClient, shop, prompt.Text)
+                .Create(chatClient, shop, prompt.Text, tracing.SensitiveData)
                 .RunAsync(messages, cancellationToken: cancellationToken);
             var result = new TurnResponse { Items = ChatMapping.ToItems(response.Messages, SupportAgent.Name) };
-            AgentTracing.RecordOutput(turn, result);
+            AgentTracing.RecordOutput(turn, result, tracing.SensitiveData);
             return result;
         }
         catch (Exception error)
