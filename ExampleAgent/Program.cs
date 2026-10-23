@@ -17,7 +17,8 @@ if (DotEnv.Find(Directory.GetCurrentDirectory()) is { } dotEnv)
 // traceparent and baggage (Suwageval's run, scenario...) to the model provider.
 DistributedContextPropagator.Current = DistributedContextPropagator.CreateNoOutputPropagator();
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddAgentTracing();
+builder.AddAgentTracing();
+builder.Services.AddSingleton(TracingSettings.From(builder.Configuration));
 
 // The settings are read when first needed (not here), so a test can supply them and replace the chat client.
 builder.Services.AddSingleton(services => ModelSettings.From(services.GetRequiredService<IConfiguration>()));
@@ -33,7 +34,7 @@ builder.Services.AddSingleton<IAgentContractSource, SupportContractSource>();
 builder.Services.AddSingleton<ITurnHandler, SupportTurnHandler>();
 
 var app = builder.Build();
-if (AgentTracing.IsOn(app.Configuration))
+if (AgentTracing.IsOn(builder.Configuration))
 {
     TracingLog.On(app.Logger);
 }

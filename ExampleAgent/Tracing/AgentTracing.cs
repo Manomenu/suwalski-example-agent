@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using OpenTelemetry;
-using OpenTelemetry.Exporter;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Suwageval.AgentSdk;
@@ -29,10 +28,11 @@ internal static class AgentTracing
 
     public static readonly ActivitySource Source = new(SourceName);
 
+    /// <summary>Tracing is on when both Langfuse keys and the OTLP endpoint are configured.</summary>
     public static bool IsOn(IConfiguration configuration) =>
         AuthorizationHeader(configuration) is not null && !string.IsNullOrEmpty(configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
 
-    /// <summary>The OTLP <c>Authorization</c> header for Langfuse, or null when a key is missing (tracing is then off).</summary>
+    /// <summary>The OTLP <c>Authorization</c> header for Langfuse (the value of <c>OTEL_EXPORTER_OTLP_HEADERS</c>), or null when a key is missing.</summary>
     public static string? AuthorizationHeader(IConfiguration configuration)
     {
         var publicKey = configuration["LANGFUSE_PUBLIC_KEY"];
@@ -42,36 +42,29 @@ internal static class AgentTracing
             : "Authorization=Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes($"{publicKey}:{secretKey}"));
     }
 
-    /// <summary>
-    /// Adds the tracer provider. What it listens to and exports is decided when it is built (the configuration is final by then):
-    /// without Langfuse's keys it listens to nothing, so tracing costs nothing.
-    /// </summary>
     /// <summary>The service name the traces carry (otherwise OpenTelemetry says <c>unknown_service:dotnet</c>).</summary>
     public const string ServiceName = "suwexag";
 
-    public static void AddAgentTracing(this IServiceCollection services)
+    /// <summary>
+    /// Adds tracing when Langfuse's keys are configured: the agent's source, the processor and the standard OTLP exporter
+    /// (<c>UseOtlpExporter</c>), which reads <c>OTEL_EXPORTER_OTLP_ENDPOINT</c>, <c>_PROTOCOL</c> and <c>_HEADERS</c> from the configuration.
+    /// The endpoint and protocol are committed in appsettings.json; the headers are computed here from the keys. Without the keys
+    /// nothing is registered, so nothing listens to the source and tracing costs nothing.
+    /// </summary>
+    public static void AddAgentTracing(this WebApplicationBuilder builder)
     {
-        services.AddOpenTelemetry().WithTracing(_ => { });
-        services.ConfigureOpenTelemetryTracerProvider(
-            (provider, builder) =>
-            {
-                var configuration = provider.GetRequiredService<IConfiguration>();
-                if (
-                    AuthorizationHeader(configuration) is not { } header
-                    || configuration["OTEL_EXPORTER_OTLP_ENDPOINT"] is not { Length: > 0 } endpoint
-                )
-                {
-                    return;
-                }
-                // The endpoint is read from the configuration (appsettings.json); Langfuse takes OTLP over HTTP/protobuf, not gRPC.
-                var options = new OtlpExporterOptions
-                {
-                    Endpoint = new Uri($"{endpoint.TrimEnd('/')}/v1/traces"),
-                    Protocol = OtlpExportProtocol.HttpProtobuf,
-                    Headers = header,
-                };
-                builder
-                    .ConfigureResource(resource => resource.AddService(ServiceName))
+        ArgumentNullException.ThrowIfNull(builder);
+        var configuration = builder.Configuration;
+        if (!IsOn(configuration))
+        {
+            return;
+        }
+        configuration.AddInMemoryCollection([new("OTEL_EXPORTER_OTLP_HEADERS", AuthorizationHeader(configuration))]);
+        builder
+            .Services.AddOpenTelemetry()
+            .ConfigureResource(resource => resource.AddService(ServiceName))
+            .WithTracing(tracing =>
+                tracing
                     .AddSource(SourceName)
                     .AddProcessor(
                         new SuwagevalTraceProcessor(
@@ -79,9 +72,8 @@ internal static class AgentTracing
                             Release(configuration)
                         )
                     )
-                    .AddProcessor(new BatchActivityExportProcessor(new OtlpTraceExporter(options)));
-            }
-        );
+            )
+            .UseOtlpExporter(); // after WithTracing: the exporter comes after our processor, so it exports the tags the processor sets
     }
 
     /// <summary>
@@ -113,31 +105,51 @@ internal static class AgentTracing
         }
     }
 
-    /// <summary>The turn's input: the conversation the agent got. On the observation and on the trace (the trace list shows it).</summary>
-    public static void RecordInput(Activity? turn, TurnRequest request)
+    /// <summary>The turn's input: the new user message of this turn (the last one of the conversation the agent got); null when there is none.</summary>
+    public static string? InputText(TurnRequest request)
     {
-        if (turn is null)
-        {
-            return;
-        }
-        var json = JsonSerializer.Serialize(request.Conversation, ContractJson.Options);
-        turn.SetTag("langfuse.observation.input", json);
-        turn.SetTag("langfuse.trace.input", json);
+        ArgumentNullException.ThrowIfNull(request);
+        return request.Conversation.OfType<UserMessage>().LastOrDefault()?.Text;
+    }
+
+    /// <summary>The turn's output: the agent's final assistant message; when the response has none, its items as JSON.</summary>
+    public static string OutputText(TurnResponse response)
+    {
+        ArgumentNullException.ThrowIfNull(response);
+        return response.Items.OfType<AssistantMessage>().LastOrDefault()?.Text
+            ?? JsonSerializer.Serialize(response.Items, ContractJson.Options);
     }
 
     /// <summary>
-    /// The turn's output: what the agent answered (the response's items). Each event it emitted also becomes an <c>event</c>
+    /// The turn's input on the observation and on the trace (the trace list shows it). Message content is personal data in a real
+    /// app, so without <paramref name="sensitive"/> (<c>Tracing:SensitiveData</c>) nothing is recorded.
+    /// </summary>
+    public static void RecordInput(Activity? turn, TurnRequest request, bool sensitive)
+    {
+        if (turn is null || !sensitive || InputText(request) is not { } text)
+        {
+            return;
+        }
+        turn.SetTag("langfuse.observation.input", text);
+        turn.SetTag("langfuse.trace.input", text);
+    }
+
+    /// <summary>
+    /// The turn's output (same switch as the input). Each event the agent emitted also becomes an <c>event</c>
     /// observation under the turn, named after the event's type, with the event's data as input and output.
     /// </summary>
-    public static void RecordOutput(Activity? turn, TurnResponse response)
+    public static void RecordOutput(Activity? turn, TurnResponse response, bool sensitive)
     {
         if (turn is null)
         {
             return;
         }
-        var json = JsonSerializer.Serialize(response.Items, ContractJson.Options);
-        turn.SetTag("langfuse.observation.output", json);
-        turn.SetTag("langfuse.trace.output", json);
+        if (sensitive)
+        {
+            var text = OutputText(response);
+            turn.SetTag("langfuse.observation.output", text);
+            turn.SetTag("langfuse.trace.output", text);
+        }
         Activity.Current = turn; // the events are children of the turn and inherit its baggage (a parent context would not carry it)
         foreach (var item in response.Items.OfType<Event>())
         {

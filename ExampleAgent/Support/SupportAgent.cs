@@ -34,13 +34,14 @@ internal static class SupportAgent
         """;
 
     /// <summary>The agent over one shop (its tools work on that shop's orders).</summary>
-    public static AIAgent Create(IChatClient chatClient, Shop.Shop shop, string prompt)
+    public static AIAgent Create(IChatClient chatClient, Shop.Shop shop, string prompt, bool sensitiveData)
     {
         ArgumentNullException.ThrowIfNull(shop);
+        // Message contents and tool arguments/results are on the spans only with Tracing:SensitiveData (personal data in a real app).
         // The model call becomes a gen_ai span of the agent's source (with the messages), and the function invocation above it a span per tool call.
         var traced = chatClient
             .AsBuilder()
-            .UseOpenTelemetry(sourceName: AgentTracing.SourceName, configure: c => c.EnableSensitiveData = true)
+            .UseOpenTelemetry(sourceName: AgentTracing.SourceName, configure: c => c.EnableSensitiveData = sensitiveData)
             .Build();
         return new ChatClientAgent(traced, prompt, Name, description: null, tools: [.. new ShopTools(shop).ToFunctions()]);
     }
