@@ -2,6 +2,9 @@
 
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
+# The local self-hosted Langfuse: just langfuse up | status | down | prune | setup
+mod langfuse 'langfuse/langfuse.just'
+
 [private]
 default:
     @just --list --unsorted

@@ -149,3 +149,27 @@ ExampleAgent/            the agent (Program.cs, DotEnv.cs, ModelSettings.cs)
 ExampleAgent.Tests/      xUnit v3 tests
 suwageval/               agent.yaml and the scenarios
 ```
+
+## Langfuse
+
+A local, self-hosted Langfuse (v4: web, worker, PostgreSQL, ClickHouse, Redis, MinIO; all images pinned in
+`langfuse/compose.yaml`) collects the agent's traces. It needs Docker (or podman behind `docker`) with Compose v2.
+
+```sh
+just langfuse up        # generates the secrets in .env once, starts the stack, waits for it
+just langfuse status    # the address, whether the web answers, each service's state
+just langfuse down      # stops it, keeps the data
+just langfuse prune     # stops it and removes the volumes (asks first; --yes skips; all traces are lost)
+just langfuse setup     # sets Claude Code up for it (below)
+```
+
+- Address: http://localhost:3290 (only the web is published, on 127.0.0.1). Login: the e-mail `LANGFUSE_USER_EMAIL` from
+  `.env` (default `suwexag@example.com`), password `LANGFUSE_USER_PASSWORD` in `.env`. The organization and project
+  `suwexag` and the project's API keys (`LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`) exist after the first start
+  (Langfuse's `LANGFUSE_INIT_*` variables); the secrets are generated into the gitignored `.env`, names in `.env.example`.
+- The OpenTelemetry exporter settings are committed in `ExampleAgent/appsettings.json`
+  (`OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:3290/api/public/otel`, `OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf`;
+  Langfuse takes OTLP over HTTP, not gRPC). The auth header is built from the keys in `.env`, never committed.
+- `just langfuse setup` for Claude Code: copies the official Langfuse skill (github.com/langfuse/skills, `skills/langfuse`, pinned
+  to a commit in `langfuse/scripts/setup.sh`) into `.claude/skills/langfuse/` (committed), and writes `LANGFUSE_PUBLIC_KEY`,
+  `LANGFUSE_SECRET_KEY` and `LANGFUSE_BASE_URL` into `.claude/settings.local.json` (gitignored). Restart Claude Code afterwards.
