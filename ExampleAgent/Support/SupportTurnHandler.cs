@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using ExampleAgent.Shop;
 using ExampleAgent.Tracing;
 using Microsoft.Extensions.AI;
@@ -20,10 +21,23 @@ internal sealed partial class SupportTurnHandler(
         // The headers are for correlation only: they go to the logs, never into what the agent does.
         LogTurn(request.Correlation.RunId, request.Correlation.Scenario, request.Correlation.Sample, request.ConversationId);
 
-        var messages = ChatMapping.ToMessages(request); // throws TurnRejectedException for a history that cannot be one
-        var shop = shops.For(request.ConversationId, request.FixturesAs<ShopFixtures>());
-        var response = await SupportAgent.Create(chatClient, shop, prompt.Text).RunAsync(messages, cancellationToken: cancellationToken);
-        return new TurnResponse { Items = ChatMapping.ToItems(response.Messages, SupportAgent.Name) };
+        AgentTracing.RecordInput(turn, request);
+        try
+        {
+            var messages = ChatMapping.ToMessages(request); // throws TurnRejectedException for a history that cannot be one
+            var shop = shops.For(request.ConversationId, request.FixturesAs<ShopFixtures>());
+            var response = await SupportAgent
+                .Create(chatClient, shop, prompt.Text)
+                .RunAsync(messages, cancellationToken: cancellationToken);
+            var result = new TurnResponse { Items = ChatMapping.ToItems(response.Messages, SupportAgent.Name) };
+            AgentTracing.RecordOutput(turn, result);
+            return result;
+        }
+        catch (Exception error)
+        {
+            turn?.SetStatus(ActivityStatusCode.Error, error.Message); // the processor turns it into level ERROR
+            throw;
+        }
     }
 
     [LoggerMessage(

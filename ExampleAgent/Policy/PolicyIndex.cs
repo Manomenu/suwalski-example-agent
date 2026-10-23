@@ -67,9 +67,13 @@ internal static class PolicyIndex
         using var retrieval = AgentTracing.Source.StartActivity("retrieval");
         retrieval?.SetTag("langfuse.observation.type", "retriever");
         retrieval?.SetTag("langfuse.observation.input", query);
-        var chunks = Search(query).Select(match => new { source = match.Chunk.Source, text = match.Chunk.Text }).ToArray();
-        retrieval?.SetTag("langfuse.observation.output", System.Text.Json.JsonSerializer.Serialize(chunks));
-        return chunks;
+        var matches = Search(query);
+        // The span shows which documents were found and how well they matched; the tool's result carries their text.
+        retrieval?.SetTag(
+            "langfuse.observation.output",
+            System.Text.Json.JsonSerializer.Serialize(matches.Select(match => new { id = match.Chunk.Source, score = match.Score }))
+        );
+        return matches.Select(match => new { source = match.Chunk.Source, text = match.Chunk.Text }).ToArray();
     }
 
     private static HashSet<string> Words(string text) =>

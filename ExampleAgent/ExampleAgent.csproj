@@ -7,6 +7,22 @@
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
   </ItemGroup>
+  <!-- The release Langfuse shows: the commit this build comes from. No .git (the image build) or no git: no release (SUWEXAG_RELEASE then). -->
+  <Target
+    Name="SetSourceRevisionId"
+    BeforeTargets="InitializeSourceControlInformation"
+    Condition="Exists('$(MSBuildThisFileDirectory)../.git')"
+  >
+    <Exec
+      Command="git rev-parse --short=12 HEAD"
+      ConsoleToMSBuild="true"
+      StandardErrorImportance="low"
+      IgnoreExitCode="true"
+      ContinueOnError="true"
+    >
+      <Output PropertyName="SourceRevisionId" TaskParameter="ConsoleOutput" />
+    </Exec>
+  </Target>
   <ItemGroup>
     <InternalsVisibleTo Include="ExampleAgent.Tests" />
   </ItemGroup>

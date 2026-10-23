@@ -1,9 +1,12 @@
 using System.Diagnostics;
 using System.Text;
-using OpenTelemetry.Resources;
+using System.Text.Json;
 using OpenTelemetry;
 using OpenTelemetry.Exporter;
+using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using Suwageval.AgentSdk;
+using Suwageval.AgentSdk.Conversations;
 using Suwageval.AgentSdk.Invocation;
 
 namespace ExampleAgent.Tracing;
@@ -19,6 +22,10 @@ internal static class AgentTracing
 
     // Not a Suwageval key: the conversation id travels as baggage on the turn so the processor can copy it onto every span.
     public const string ConversationBaggage = "suwexag.conversation.id";
+
+    public const string LevelTag = "langfuse.observation.level";
+    public const string Error = "ERROR";
+    public const string Warning = "WARNING";
 
     public static readonly ActivitySource Source = new(SourceName);
 
@@ -66,10 +73,80 @@ internal static class AgentTracing
                 builder
                     .ConfigureResource(resource => resource.AddService(ServiceName))
                     .AddSource(SourceName)
-                    .AddProcessor(new SuwagevalTraceProcessor())
+                    .AddProcessor(
+                        new SuwagevalTraceProcessor(
+                            configuration["SUWAGEVAL_LABEL"] is { Length: > 0 } label ? label : null,
+                            Release(configuration)
+                        )
+                    )
                     .AddProcessor(new BatchActivityExportProcessor(new OtlpTraceExporter(options)));
             }
         );
+    }
+
+    /// <summary>
+    /// The release (<c>langfuse.release</c>): <c>SUWEXAG_RELEASE</c> when set (an image has no .git), else the git commit the build
+    /// recorded in the assembly's informational version (<c>SourceRevisionId</c>, set by the csproj from git); null when neither is known.
+    /// </summary>
+    public static string? Release(IConfiguration configuration)
+    {
+        ArgumentNullException.ThrowIfNull(configuration);
+        if (configuration["SUWEXAG_RELEASE"] is { Length: > 0 } release)
+        {
+            return release;
+        }
+        var informational = typeof(AgentTracing)
+            .Assembly.GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false)
+            .OfType<System.Reflection.AssemblyInformationalVersionAttribute>()
+            .FirstOrDefault()
+            ?.InformationalVersion;
+        return informational?.Split('+', 2) is [_, { Length: > 0 } revision] ? revision : null;
+    }
+
+    /// <summary>Marks an observation <c>WARNING</c> or <c>ERROR</c> with a message (<c>langfuse.observation.level</c>, <c>status_message</c>).</summary>
+    public static void Flag(Activity? span, string level, string? message)
+    {
+        span?.SetTag(LevelTag, level);
+        if (!string.IsNullOrEmpty(message))
+        {
+            span?.SetTag("langfuse.observation.status_message", message);
+        }
+    }
+
+    /// <summary>The turn's input: the conversation the agent got. On the observation and on the trace (the trace list shows it).</summary>
+    public static void RecordInput(Activity? turn, TurnRequest request)
+    {
+        if (turn is null)
+        {
+            return;
+        }
+        var json = JsonSerializer.Serialize(request.Conversation, ContractJson.Options);
+        turn.SetTag("langfuse.observation.input", json);
+        turn.SetTag("langfuse.trace.input", json);
+    }
+
+    /// <summary>
+    /// The turn's output: what the agent answered (the response's items). Each event it emitted also becomes an <c>event</c>
+    /// observation under the turn, named after the event's type, with the event's data as input and output.
+    /// </summary>
+    public static void RecordOutput(Activity? turn, TurnResponse response)
+    {
+        if (turn is null)
+        {
+            return;
+        }
+        var json = JsonSerializer.Serialize(response.Items, ContractJson.Options);
+        turn.SetTag("langfuse.observation.output", json);
+        turn.SetTag("langfuse.trace.output", json);
+        Activity.Current = turn; // the events are children of the turn and inherit its baggage (a parent context would not carry it)
+        foreach (var item in response.Items.OfType<Event>())
+        {
+            using var observation = Source.StartActivity(item.Type);
+            var data = item.Data.GetRawText();
+            observation?.SetTag("langfuse.observation.type", "event");
+            observation?.SetTag("langfuse.observation.input", data);
+            observation?.SetTag("langfuse.observation.output", data);
+        }
     }
 
     /// <summary>Starts the <c>turn</c> span as the root of a new trace (no parent); null when nobody listens.</summary>
@@ -90,6 +167,7 @@ internal static class AgentTracing
         SetBaggage(turn, SuwagevalBaggage.ScenarioTags, string.Join(',', correlation.ScenarioTags));
         SetBaggage(turn, SuwagevalBaggage.RunTags, string.Join(',', correlation.RunTags));
         SetBaggage(turn, SuwagevalBaggage.RunGroup, correlation.RunGroup);
+        SetBaggage(turn, SuwagevalBaggage.AgentVersionId, correlation.AgentVersionId);
         SetBaggage(turn, ConversationBaggage, request.ConversationId);
         SuwagevalTraceProcessor.Apply(turn); // the processor saw the span before its baggage was set
         return turn;
