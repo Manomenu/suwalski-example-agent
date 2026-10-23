@@ -52,12 +52,9 @@ internal sealed class SuwagevalTraceProcessor : BaseProcessor<Activity>
         SetMetadata(data, "suwageval_run_group", runGroup);
         SetMetadata(data, "suwageval_run_tags", runTags.Length > 0 ? string.Join(",", runTags) : null);
 
-        // Tags only from a small, fixed set: the scenario's own tags (the agent's YAML). A run id, a group or a sample is new every
-        // time, so as a tag each would add an entry to Langfuse's tag list for good; they are metadata, which filters just as well.
-        if (scenarioTags.Length > 0)
-        {
-            data.SetTag("langfuse.trace.tags", scenarioTags.Select(tag => $"suwageval_scenario_tag:{tag}").ToArray());
-        }
+        SetMetadata(data, "suwageval_scenario_tags", scenarioTags.Length > 0 ? string.Join(",", scenarioTags) : null);
+        // No Langfuse tags at all: every value here can be new on any run (a run id, a group, a scenario tag per task), and each
+        // would stay in Langfuse's tag list for good. Metadata filters just as well.
     }
 
     /// <summary>Langfuse's observation type for what M.E.AI emits: a model call is a generation, a tool call a tool.</summary>
