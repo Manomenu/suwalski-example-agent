@@ -53,6 +53,14 @@ public class TracingTests
         var trace = snapshot.Where(span => span.TraceId == turn.TraceId).ToArray();
         Assert.Contains(trace, span => span.GetTagItem("langfuse.observation.type") as string == "generation");
         Assert.Contains(trace, span => span.GetTagItem("langfuse.observation.type") as string == "tool");
+        Assert.Equal("agent", turn.GetTagItem("langfuse.observation.type"));
+        Assert.Contains("Refund A-17", (string)turn.GetTagItem("langfuse.trace.input")!, StringComparison.Ordinal);
+        Assert.Contains("Done.", (string)turn.GetTagItem("langfuse.trace.output")!, StringComparison.Ordinal);
+        Assert.Contains(trace, span => span.GetTagItem("langfuse.observation.type") as string == "chain");
+        Assert.Contains(
+            trace,
+            span => span.OperationName == "state.changed" && span.GetTagItem("langfuse.observation.type") as string == "event"
+        );
         Assert.All(trace, span => Assert.Equal(conversation, span.GetTagItem("langfuse.session.id")));
         Assert.DoesNotContain(snapshot, span => span.OperationName.Contains("HttpRequestIn", StringComparison.Ordinal));
     }

@@ -181,11 +181,23 @@ The agent sends its traces to this Langfuse over OTLP/HTTP when `LANGFUSE_PUBLIC
 source `Suwexag`; the HTTP layer is never traced (no ASP.NET Core or HttpClient instrumentation), and no `traceparent` or
 `baggage` is forwarded to the model provider.
 
-- One trace per turn: the root span `turn`; under it a generation per model call (`chat <model>`, with the messages and the
-  token usage), a tool per tool call and a `retrieval` span for `search_policy`.
+- One trace per turn: the root span `turn` (Langfuse type `agent`, with the conversation the agent got as input and its answer
+  as output; the same on the trace, `langfuse.trace.input` / `langfuse.trace.output`, so the trace list shows question and
+  answer). Under it: `orchestrate_tools` (`chain`: the tool-calling loop), a generation per model call (`chat <model>`, with
+  the messages and the token usage), a `tool` per tool call (with its arguments and result: the chat client records them,
+  `EnableSensitiveData`, this is test data), a `retrieval` span for `search_policy` (`retriever`; output: the found document ids
+  with their scores) and an `event` observation named after each event the agent emits to Suwageval (`state.changed`; the
+  event's data as input and output).
+- Levels: `ERROR` (`langfuse.observation.level` + `status_message`) on a span that threw, on the turn when it threw, and on
+  `get_order` / `refund_order` for an order that is not found; `WARNING` on `refund_order` when the refund is refused (the order
+  is not delivered).
+- Version and release, set by the agent itself on every span, for any traffic: `langfuse.version` = the contract's label
+  (`SUWAGEVAL_LABEL`; the variant name in a sweep), `langfuse.release` = `SUWEXAG_RELEASE` when set, else the git commit the
+  build comes from (the csproj sets `SourceRevisionId` from `git rev-parse`, so it is in the assembly's informational version;
+  an image has no `.git`, set `SUWEXAG_RELEASE` there). Neither is set when unknown. Langfuse's v2 observations API does not return the release: it is in the span's attributes.
 - The session is the conversation: `langfuse.session.id` = the turn's `conversationId` (one per scenario sample).
 - What Suwageval sends in the `baggage` header lands on every span: environment `suwageval`, metadata under the very keys
-  Suwageval sends (`suwageval.run.id`, `suwageval.run.group`, `suwageval.run.tags`, `suwageval.scenario.key`,
+  Suwageval sends (`suwageval.run.id`, `suwageval.agent.version.id` (the id Suwageval registered the version under), `suwageval.run.group`, `suwageval.run.tags`, `suwageval.scenario.key`,
   `suwageval.scenario.type`, `suwageval.scenario.sample`, `suwageval.scenario.tags`; this app adds Langfuse's
   `langfuse.trace.metadata.` prefix), the service `suwexag`, and no Langfuse tags: a run id, a group or a scenario tag (one per task) can be new on any run,
   and as a tag each would stay in Langfuse's tag list for good, so all of them are metadata. A turn from anything else has

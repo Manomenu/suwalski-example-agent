@@ -1,7 +1,9 @@
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using ExampleAgent.Policy;
+using ExampleAgent.Tracing;
 using Microsoft.Extensions.AI;
 
 namespace ExampleAgent.Shop;
@@ -50,7 +52,10 @@ internal sealed class ShopTools(Shop shop)
         }
         if (order.Status != OrderStatus.delivered)
         {
-            return new { error = $"Order {order_id} is {order.Status}; only a delivered order can be refunded." };
+            var refusal = $"Order {order_id} is {order.Status}; only a delivered order can be refunded.";
+            // The tool's own span (M.E.AI's execute_tool, the current activity here): a refused action is a warning, not a failure.
+            AgentTracing.Flag(Activity.Current, AgentTracing.Warning, refusal);
+            return new { error = refusal };
         }
         order.Status = OrderStatus.refunded;
         return new
@@ -61,5 +66,10 @@ internal sealed class ShopTools(Shop shop)
         };
     }
 
-    private static object NotFound(string orderId) => new { error = $"Order {orderId} not found." };
+    private static object NotFound(string orderId)
+    {
+        var message = $"Order {orderId} not found.";
+        AgentTracing.Flag(Activity.Current, AgentTracing.Error, message);
+        return new { error = message };
+    }
 }
