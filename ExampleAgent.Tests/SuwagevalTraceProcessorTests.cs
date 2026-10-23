@@ -31,12 +31,6 @@ public class SuwagevalTraceProcessorTests
         return (provider, spans);
     }
 
-    private static readonly string[] ExpectedTags =
-    [
-        "suwageval_scenario_tag:a",
-        "suwageval_scenario_tag:b",
-    ];
-
     private static TurnRequest Request(TurnCorrelation correlation, string? conversationId) =>
         new()
         {
@@ -68,7 +62,9 @@ public class SuwagevalTraceProcessorTests
             Assert.Equal("2", span.GetTagItem("langfuse.trace.metadata.suwageval_sample"));
             Assert.Equal("Simulation", span.GetTagItem("langfuse.trace.metadata.suwageval_scenario_type"));
             Assert.Equal("group-1", span.GetTagItem("langfuse.trace.metadata.suwageval_run_group"));
-            Assert.Equal(ExpectedTags, Assert.IsType<string[]>(span.GetTagItem("langfuse.trace.tags")));
+            Assert.Equal("a,b", span.GetTagItem("langfuse.trace.metadata.suwageval_scenario_tags"));
+            Assert.Equal("fast", span.GetTagItem("langfuse.trace.metadata.suwageval_run_tags"));
+            Assert.Null(span.GetTagItem("langfuse.trace.tags")); // no Langfuse tags: every value could be new on any run
         }
     }
 

@@ -185,9 +185,9 @@ source `Suwexag`; the HTTP layer is never traced (no ASP.NET Core or HttpClient 
   token usage), a tool per tool call and a `retrieval` span for `search_policy`.
 - The session is the conversation: `langfuse.session.id` = the turn's `conversationId` (one per scenario sample).
 - What Suwageval sends in the `baggage` header lands on every span: environment `suwageval`, metadata `suwageval_run_id`,
-  `suwageval_scenario`, `suwageval_scenario_type`, `suwageval_sample`, `suwageval_run_group`, `suwageval_run_tags`, and as
-  tags only the scenario's own tags, `suwageval_scenario_tag:<tag>`: a tag comes from a small fixed set, while a run id or a
-  group is new every time and would grow Langfuse's tag list for good, so those stay metadata. A turn from anything else has
+  `suwageval_scenario`, `suwageval_scenario_type`, `suwageval_sample`, `suwageval_run_group`, `suwageval_run_tags`,
+  `suwageval_scenario_tags`, and no Langfuse tags: a run id, a group or a scenario tag (one per task) can be new on any run,
+  and as a tag each would stay in Langfuse's tag list for good, so all of them are metadata. A turn from anything else has
   no such values and the default environment.
 - To find a run's traces: filter the metadata `suwageval_run_id` = the run id (Tracing, then Filter, Metadata); a sample's
   conversation is the session with its conversation id. The attribute names are Langfuse's
