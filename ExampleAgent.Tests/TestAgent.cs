@@ -24,6 +24,8 @@ internal sealed class TestAgent : IDisposable
             host.UseSetting("OPENAI_BASE_URL", "http://localhost:1/v1");
             host.UseSetting("OPENAI_API_KEY", "not-a-key");
             host.UseSetting("OPENAI_MODEL", "test-model");
+            host.UseSetting("LANGFUSE_PUBLIC_KEY", ""); // a developer's .env must not make the tests export traces
+            host.UseSetting("LANGFUSE_SECRET_KEY", "");
             host.ConfigureServices(services => services.AddSingleton(chatClient));
         });
     }

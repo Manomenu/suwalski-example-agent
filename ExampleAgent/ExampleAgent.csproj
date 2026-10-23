@@ -4,6 +4,8 @@
     <ProjectReference Include="../../suwalski-agent-eval/Suwageval.AgentSdk/Suwageval.AgentSdk.csproj" />
     <PackageReference Include="Microsoft.Agents.AI" />
     <PackageReference Include="Microsoft.Extensions.AI.OpenAI" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="ExampleAgent.Tests" />

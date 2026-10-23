@@ -1,4 +1,5 @@
 using ExampleAgent.Shop;
+using ExampleAgent.Tracing;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 
@@ -36,6 +37,11 @@ internal static class SupportAgent
     public static AIAgent Create(IChatClient chatClient, Shop.Shop shop, string prompt)
     {
         ArgumentNullException.ThrowIfNull(shop);
-        return new ChatClientAgent(chatClient, prompt, Name, description: null, tools: [.. new ShopTools(shop).ToFunctions()]);
+        // The model call becomes a gen_ai span of the agent's source (with the messages), and the function invocation above it a span per tool call.
+        var traced = chatClient
+            .AsBuilder()
+            .UseOpenTelemetry(sourceName: AgentTracing.SourceName, configure: c => c.EnableSensitiveData = true)
+            .Build();
+        return new ChatClientAgent(traced, prompt, Name, description: null, tools: [.. new ShopTools(shop).ToFunctions()]);
     }
 }

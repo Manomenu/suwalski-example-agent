@@ -9,6 +9,7 @@ x-langfuse-env: &langfuse-env
   SALT: ${LANGFUSE_SALT:?}
   ENCRYPTION_KEY: ${LANGFUSE_ENCRYPTION_KEY:?}
   TELEMETRY_ENABLED: "false"
+  NEXT_TELEMETRY_DISABLED: "1"
   CLICKHOUSE_MIGRATION_URL: clickhouse://clickhouse:9000
   CLICKHOUSE_URL: http://clickhouse:8123
   CLICKHOUSE_USER: clickhouse
@@ -58,6 +59,8 @@ services:
     environment:
       <<: *langfuse-env
       NEXTAUTH_SECRET: ${LANGFUSE_NEXTAUTH_SECRET:?}
+      # Only the init user below can log in: nobody can sign up (the local single-user setup).
+      AUTH_DISABLE_SIGNUP: "true"
       # Headless init: the organization, project, its API keys and the user exist after the first start.
       LANGFUSE_INIT_ORG_ID: suwexag
       LANGFUSE_INIT_ORG_NAME: suwexag

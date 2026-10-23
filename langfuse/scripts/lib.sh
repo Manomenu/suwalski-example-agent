@@ -47,3 +47,28 @@ env_value() {
 healthy() {
   curl -fsS -m 3 "$url/api/public/health" >/dev/null 2>&1
 }
+
+# Creates, through the public API with the project keys, the model definition of the agent's model (a local model: prices 0) so its
+# generations get a model and their tokens show without warnings. Skipped when OPENAI_MODEL is not set or the definition exists.
+ensure_model() {
+  local model auth page=1 pages=1 body escaped
+  model="$(env_value OPENAI_MODEL)"
+  if [ -z "$model" ]; then
+    echo "model definition: skipped (OPENAI_MODEL is not set in .env)"
+    return 0
+  fi
+  auth="$(env_value LANGFUSE_PUBLIC_KEY):$(env_value LANGFUSE_SECRET_KEY)"
+  while [ "$page" -le "$pages" ]; do
+    body="$(curl -fsS -m 20 -u "$auth" "$url/api/public/models?limit=100&page=$page")"
+    if jq -e --arg m "$model" '.data[] | select(.modelName == $m and (.isLangfuseManaged | not))' <<<"$body" >/dev/null; then
+      echo "model definition: $model exists"
+      return 0
+    fi
+    pages="$(jq -r '.meta.totalPages' <<<"$body")"
+    page=$((page + 1))
+  done
+  escaped="$(printf '%s' "$model" | sed 's/[][\.*^$+?(){}|]/\\&/g')"
+  jq -n --arg m "$model" --arg p "(?i)^$escaped\$" '{modelName: $m, matchPattern: $p, unit: "TOKENS", inputPrice: 0, outputPrice: 0}' |
+    curl -fsS -m 20 -u "$auth" -H 'content-type: application/json' -d @- "$url/api/public/models" >/dev/null
+  echo "model definition: created $model (prices 0)"
+}
