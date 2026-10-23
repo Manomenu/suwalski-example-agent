@@ -191,5 +191,7 @@ source `Suwexag`; the HTTP layer is never traced (no ASP.NET Core or HttpClient 
 - To find a run's traces: filter the tag `suwageval_run:<run id>` (Tracing, then Filter, Tags); a sample's conversation is the
   session with its conversation id. The attribute names are Langfuse's
   ([OpenTelemetry docs](https://langfuse.com/integrations/native/opentelemetry)).
-- `just langfuse up` also creates the model definition for `OPENAI_MODEL` (prices 0, a local model) and runs `setup`, so there
-  is no step in the UI; sign-up is disabled, only the init user exists.
+- `just langfuse up` ends with `setup`, so there is no step in the UI; sign-up is disabled, only the init user exists.
+  `setup` holds what is this machine's and never committed: the model definition for `OPENAI_MODEL` from `.env` (prices 0,
+  a local model; it lets Langfuse attach the model to each generation and count its tokens without warnings) and Claude
+  Code's skill with its credentials in `.claude/settings.local.json`.

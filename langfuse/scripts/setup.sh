@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# Sets Claude Code up for the local Langfuse in this repository: the official Langfuse skill (pinned copy in
-# .claude/skills/langfuse/) and the credentials in .claude/settings.local.json (gitignored), taken from .env.
+# Sets up what this machine needs and the repository must not hold: the model definition for the agent's model in Langfuse
+# (its name comes from OPENAI_MODEL in the gitignored .env, never from a committed file), and Claude Code for the local
+# Langfuse: the official Langfuse skill (pinned copy in .claude/skills/langfuse/) and the credentials in
+# .claude/settings.local.json (gitignored), taken from .env.
 # Idempotent. Usage: langfuse/scripts/setup.sh   (from the repository root)
 # shellcheck disable=SC2154
 set -euo pipefail
@@ -11,6 +13,12 @@ set -euo pipefail
 skills_commit=b86532b77f16f1e27c7cffa32bb632aa3cd9a352
 
 ensure_env
+
+if healthy; then
+  ensure_model
+else
+  echo "model definition: skipped (Langfuse is not running; just langfuse up runs setup again)"
+fi
 
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
