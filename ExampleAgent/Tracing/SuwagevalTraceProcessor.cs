@@ -42,7 +42,7 @@ internal sealed class SuwagevalTraceProcessor : BaseProcessor<Activity>
         var fromSuwageval = runId is not null || scenario is not null || sample is not null || runGroup is not null;
         if (!fromSuwageval)
         {
-            return; // no Suwageval: the default environment, no suwageval_* values
+            return; // no Suwageval: the default environment, no suwageval.* values
         }
         data.SetTag("langfuse.environment", Environment);
         // The metadata keys are the baggage keys Suwageval sends (suwageval.run.id, …): one name for a value everywhere.
