@@ -57,13 +57,13 @@ public class SuwagevalTraceProcessorTests
         {
             Assert.Equal("conversation-9", span.GetTagItem("langfuse.session.id"));
             Assert.Equal("suwageval", span.GetTagItem("langfuse.environment"));
-            Assert.Equal("run-1", span.GetTagItem("langfuse.trace.metadata.suwageval_run_id"));
-            Assert.Equal("refunds", span.GetTagItem("langfuse.trace.metadata.suwageval_scenario"));
-            Assert.Equal("2", span.GetTagItem("langfuse.trace.metadata.suwageval_sample"));
-            Assert.Equal("Simulation", span.GetTagItem("langfuse.trace.metadata.suwageval_scenario_type"));
-            Assert.Equal("group-1", span.GetTagItem("langfuse.trace.metadata.suwageval_run_group"));
-            Assert.Equal("a,b", span.GetTagItem("langfuse.trace.metadata.suwageval_scenario_tags"));
-            Assert.Equal("fast", span.GetTagItem("langfuse.trace.metadata.suwageval_run_tags"));
+            Assert.Equal("run-1", span.GetTagItem("langfuse.trace.metadata.suwageval.run.id"));
+            Assert.Equal("refunds", span.GetTagItem("langfuse.trace.metadata.suwageval.scenario.key"));
+            Assert.Equal("2", span.GetTagItem("langfuse.trace.metadata.suwageval.scenario.sample"));
+            Assert.Equal("Simulation", span.GetTagItem("langfuse.trace.metadata.suwageval.scenario.type"));
+            Assert.Equal("group-1", span.GetTagItem("langfuse.trace.metadata.suwageval.run.group"));
+            Assert.Equal("a,b", span.GetTagItem("langfuse.trace.metadata.suwageval.scenario.tags"));
+            Assert.Equal("fast", span.GetTagItem("langfuse.trace.metadata.suwageval.run.tags"));
             Assert.Null(span.GetTagItem("langfuse.trace.tags")); // no Langfuse tags: every value could be new on any run
         }
     }

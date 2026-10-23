@@ -34,7 +34,7 @@ internal sealed class SuwagevalTraceProcessor : BaseProcessor<Activity>
         var runId = data.GetBaggageItem(SuwagevalBaggage.RunId);
         var scenario = data.GetBaggageItem(SuwagevalBaggage.ScenarioKey);
         var scenarioType = data.GetBaggageItem(SuwagevalBaggage.ScenarioTypeKey);
-        var sample = data.GetBaggageItem(SuwagevalBaggage.Sample);
+        var sample = data.GetBaggageItem(SuwagevalBaggage.ScenarioSample);
         var runGroup = data.GetBaggageItem(SuwagevalBaggage.RunGroup);
         var scenarioTags = Split(data.GetBaggageItem(SuwagevalBaggage.ScenarioTags));
         var runTags = Split(data.GetBaggageItem(SuwagevalBaggage.RunTags));
@@ -45,14 +45,15 @@ internal sealed class SuwagevalTraceProcessor : BaseProcessor<Activity>
             return; // no Suwageval: the default environment, no suwageval_* values
         }
         data.SetTag("langfuse.environment", Environment);
-        SetMetadata(data, "suwageval_run_id", runId);
-        SetMetadata(data, "suwageval_scenario", scenario);
-        SetMetadata(data, "suwageval_sample", sample);
-        SetMetadata(data, "suwageval_scenario_type", scenarioType);
-        SetMetadata(data, "suwageval_run_group", runGroup);
-        SetMetadata(data, "suwageval_run_tags", runTags.Length > 0 ? string.Join(",", runTags) : null);
+        // The metadata keys are the baggage keys Suwageval sends (suwageval.run.id, …): one name for a value everywhere.
+        SetMetadata(data, SuwagevalBaggage.RunId, runId);
+        SetMetadata(data, SuwagevalBaggage.ScenarioKey, scenario);
+        SetMetadata(data, SuwagevalBaggage.ScenarioSample, sample);
+        SetMetadata(data, SuwagevalBaggage.ScenarioTypeKey, scenarioType);
+        SetMetadata(data, SuwagevalBaggage.RunGroup, runGroup);
+        SetMetadata(data, SuwagevalBaggage.RunTags, runTags.Length > 0 ? string.Join(",", runTags) : null);
 
-        SetMetadata(data, "suwageval_scenario_tags", scenarioTags.Length > 0 ? string.Join(",", scenarioTags) : null);
+        SetMetadata(data, SuwagevalBaggage.ScenarioTags, scenarioTags.Length > 0 ? string.Join(",", scenarioTags) : null);
         // No Langfuse tags at all: every value here can be new on any run (a run id, a group, a scenario tag per task), and each
         // would stay in Langfuse's tag list for good. Metadata filters just as well.
     }
