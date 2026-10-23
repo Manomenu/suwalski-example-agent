@@ -170,6 +170,26 @@ just langfuse setup     # sets Claude Code up for it (below)
 - The OpenTelemetry exporter settings are committed in `ExampleAgent/appsettings.json`
   (`OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:3290/api/public/otel`, `OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf`;
   Langfuse takes OTLP over HTTP, not gRPC). The auth header is built from the keys in `.env`, never committed.
-- `just langfuse setup` for Claude Code: copies the official Langfuse skill (github.com/langfuse/skills, `skills/langfuse`, pinned
+- `just langfuse up` ends with `setup`; `just langfuse setup` alone re-runs it. For Claude Code it copies the official Langfuse skill (github.com/langfuse/skills, `skills/langfuse`, pinned
   to a commit in `langfuse/scripts/setup.sh`) into `.claude/skills/langfuse/` (committed), and writes `LANGFUSE_PUBLIC_KEY`,
   `LANGFUSE_SECRET_KEY` and `LANGFUSE_BASE_URL` into `.claude/settings.local.json` (gitignored). Restart Claude Code afterwards.
+
+### Tracing
+
+The agent sends its traces to this Langfuse over OTLP/HTTP when `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY` are in `.env`
+(otherwise tracing is off and the log says so once; the agent works the same). Only the agent's own spans exist, from the
+source `Suwexag`; the HTTP layer is never traced (no ASP.NET Core or HttpClient instrumentation), and no `traceparent` or
+`baggage` is forwarded to the model provider.
+
+- One trace per turn: the root span `turn`; under it a generation per model call (`chat <model>`, with the messages and the
+  token usage), a tool per tool call and a `retrieval` span for `search_policy`.
+- The session is the conversation: `langfuse.session.id` = the turn's `conversationId` (one per scenario sample).
+- What Suwageval sends in the `baggage` header lands on every span: environment `suwageval`, metadata `suwageval_run_id`,
+  `suwageval_scenario`, `suwageval_scenario_type`, `suwageval_sample`, `suwageval_run_group`, and the tags
+  `suwageval_run:<id>`, `suwageval_scenario_tag:<tag>`, `suwageval_run_tag:<tag>`, `suwageval_run_group:<group>`. A turn from
+  anything else has no such values and the default environment.
+- To find a run's traces: filter the tag `suwageval_run:<run id>` (Tracing, then Filter, Tags); a sample's conversation is the
+  session with its conversation id. The attribute names are Langfuse's
+  ([OpenTelemetry docs](https://langfuse.com/integrations/native/opentelemetry)).
+- `just langfuse up` also creates the model definition for `OPENAI_MODEL` (prices 0, a local model) and runs `setup`, so there
+  is no step in the UI; sign-up is disabled, only the init user exists.

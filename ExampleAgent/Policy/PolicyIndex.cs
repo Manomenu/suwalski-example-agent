@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Security.Cryptography;
 using System.Text;
+using ExampleAgent.Tracing;
 
 namespace ExampleAgent.Policy;
 
@@ -61,7 +62,15 @@ internal static class PolicyIndex
     [Description("Search the shop's policies (refunds, shipping, warranty). Use it for any question about how the shop works.")]
     public static object SearchPolicy(
         [Description("What the customer asks about, in a few words, e.g. refund of a shipped order")] string query
-    ) => Search(query).Select(match => new { source = match.Chunk.Source, text = match.Chunk.Text }).ToArray();
+    )
+    {
+        using var retrieval = AgentTracing.Source.StartActivity("retrieval");
+        retrieval?.SetTag("langfuse.observation.type", "retriever");
+        retrieval?.SetTag("langfuse.observation.input", query);
+        var chunks = Search(query).Select(match => new { source = match.Chunk.Source, text = match.Chunk.Text }).ToArray();
+        retrieval?.SetTag("langfuse.observation.output", System.Text.Json.JsonSerializer.Serialize(chunks));
+        return chunks;
+    }
 
     private static HashSet<string> Words(string text) =>
         text.Split([' ', ',', '.', ':', ';', '?', '!', '-', '(', ')', '\n'], StringSplitOptions.RemoveEmptyEntries)

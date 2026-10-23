@@ -1,7 +1,9 @@
 using System.ClientModel;
+using System.Diagnostics;
 using ExampleAgent;
 using ExampleAgent.Shop;
 using ExampleAgent.Support;
+using ExampleAgent.Tracing;
 using Microsoft.Extensions.AI;
 using OpenAI;
 using Suwageval.AgentSdk.Invocation;
@@ -10,7 +12,12 @@ if (DotEnv.Find(Directory.GetCurrentDirectory()) is { } dotEnv)
 {
     DotEnv.Load(dotEnv);
 }
+
+// Nothing leaves the process in a header: with the default propagator the HttpClient behind the model client would forward
+// traceparent and baggage (Suwageval's run, scenario...) to the model provider.
+DistributedContextPropagator.Current = DistributedContextPropagator.CreateNoOutputPropagator();
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddAgentTracing();
 
 // The settings are read when first needed (not here), so a test can supply them and replace the chat client.
 builder.Services.AddSingleton(services => ModelSettings.From(services.GetRequiredService<IConfiguration>()));
@@ -26,6 +33,14 @@ builder.Services.AddSingleton<IAgentContractSource, SupportContractSource>();
 builder.Services.AddSingleton<ITurnHandler, SupportTurnHandler>();
 
 var app = builder.Build();
+if (AgentTracing.IsOn(app.Configuration))
+{
+    TracingLog.On(app.Logger);
+}
+else
+{
+    TracingLog.Off(app.Logger);
+}
 _ = app.Services.GetRequiredService<PromptSettings>(); // a bad SUWEXAG_PROMPT stops the agent at start
 app.MapSuwagevalAgent(); // GET /suwageval/contract, POST /suwageval/turn
 app.Run();

@@ -1,4 +1,5 @@
 using ExampleAgent.Shop;
+using ExampleAgent.Tracing;
 using Microsoft.Extensions.AI;
 using Suwageval.AgentSdk.Invocation;
 
@@ -15,6 +16,7 @@ internal sealed partial class SupportTurnHandler(
     public async Task<TurnResponse> HandleAsync(TurnRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
+        using var turn = AgentTracing.StartTurn(request);
         // The headers are for correlation only: they go to the logs, never into what the agent does.
         LogTurn(request.Correlation.RunId, request.Correlation.Scenario, request.Correlation.Sample, request.ConversationId);
 
