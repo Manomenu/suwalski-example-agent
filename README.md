@@ -58,6 +58,20 @@ curl -s localhost:7010/suwageval/turn -H 'content-type: application/json' -d '{
 }'
 ```
 
+## Chat and monitoring
+
+`POST /chat` is the shop's real chat, what a customer talks to (Suwageval's evaluation uses `/suwageval/turn`): it keeps each
+conversation's history in memory and works on a demo shop (`A-17`, a delivered kettle; `B-2`, a toaster on its way).
+
+```sh
+curl -s localhost:7010/chat -H 'content-type: application/json' -d '{"conversationId": "chat-1", "message": "Where is my order A-17?"}'
+```
+
+Every chat turn is recorded for Suwageval's monitoring (`IConversationRecorder` of the SDK): with `Suwageval__Url`,
+`Suwageval__Agent` and `Suwageval__Environment` in `.env` (see `.env.example`) the turns go to Suwageval in the background, without
+them nowhere. `suwageval/agent.yaml` switches monitoring on (`features.monitoring`, environments `local` and `production`); after
+`suwageval push` the conversations show on the agent's Monitoring page and in `suwageval monitoring conversations`.
+
 ## Sweep
 
 `suwageval sweep` runs the scenarios once per variant of the agent and puts the runs in one run group, to compare them on the web.

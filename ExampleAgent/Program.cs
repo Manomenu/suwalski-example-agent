@@ -1,12 +1,14 @@
 using System.ClientModel;
 using System.Diagnostics;
 using ExampleAgent;
+using ExampleAgent.Chat;
 using ExampleAgent.Shop;
 using ExampleAgent.Support;
 using ExampleAgent.Tracing;
 using Microsoft.Extensions.AI;
 using OpenAI;
 using Suwageval.AgentSdk.Invocation;
+using Suwageval.AgentSdk.Monitoring;
 
 if (DotEnv.Find(Directory.GetCurrentDirectory()) is { } dotEnv)
 {
@@ -33,6 +35,10 @@ builder.Services.AddSingleton<ShopStore>();
 builder.Services.AddSingleton<IAgentContractSource, SupportContractSource>();
 builder.Services.AddSingleton<ITurnHandler, SupportTurnHandler>();
 
+// The shop's real chat, and its turns to Suwageval's monitoring when Suwageval:Url is set (.env: Suwageval__Url, __Agent, __Environment).
+builder.Services.AddSingleton<ChatHistory>();
+builder.Services.AddSuwagevalMonitoring(builder.Configuration);
+
 var app = builder.Build();
 if (AgentTracing.IsOn(builder.Configuration))
 {
@@ -44,6 +50,7 @@ else
 }
 _ = app.Services.GetRequiredService<PromptSettings>(); // a bad SUWEXAG_PROMPT stops the agent at start
 app.MapSuwagevalAgent(); // GET /suwageval/contract, POST /suwageval/turn
+app.MapChat(); // POST /chat: the customers' chat, monitored
 app.Run();
 
 /// <summary>The entry point, visible to the tests that run the agent in process.</summary>
