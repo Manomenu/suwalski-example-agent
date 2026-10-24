@@ -14,6 +14,17 @@ internal sealed record ShopFixtures
 {
     public IReadOnlyDictionary<string, OrderFixture> Orders { get; init; } = new Dictionary<string, OrderFixture>();
 
+    /// <summary>The orders of the shop's real chat (<c>POST /chat</c>): a delivered kettle and a toaster on its way.</summary>
+    public static ShopFixtures Demo { get; } =
+        new()
+        {
+            Orders = new Dictionary<string, OrderFixture>
+            {
+                ["A-17"] = new(OrderStatus.delivered, ["Kettle"], 89.9m),
+                ["B-2"] = new(OrderStatus.shipped, ["Toaster"], 49.5m),
+            },
+        };
+
     public static System.Text.Json.JsonElement Schema { get; } =
         ContractSchema.ObjectSchema(
             new JsonObject

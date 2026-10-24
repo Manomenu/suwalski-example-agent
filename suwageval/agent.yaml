@@ -5,6 +5,11 @@ name: suwexag
 endpointUrl: http://localhost:7010
 # How many times each scenario is sent by default (a scenario or a check can set its own).
 samples: 3
+# Evaluation (the default) and monitoring: the chat's conversations (POST /chat) go to Suwageval from these environments.
+# A fake shop with no personal data, so storing its conversations is fine.
+features:
+  monitoring:
+    environments: [local, production]
 # `suwageval sweep`: one run per variant file in variants/, against the sweep instance on :7011 (scripts/sweep-variant.sh).
 sweep:
   variantsDir: variants

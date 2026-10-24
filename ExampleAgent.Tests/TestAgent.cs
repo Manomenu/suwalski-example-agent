@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Suwageval.AgentSdk;
 using Suwageval.AgentSdk.Conversations;
 using Suwageval.AgentSdk.Invocation;
+using Suwageval.AgentSdk.Monitoring;
 
 namespace ExampleAgent.Tests;
 
@@ -16,7 +17,9 @@ internal sealed class TestAgent : IDisposable
 
     private readonly IChatClient chatClient;
 
-    public TestAgent(IChatClient chatClient)
+    /// <param name="chatClient">The model's stand-in.</param>
+    /// <param name="recorder">Where the chat's turns go; none: the agent's own (nothing is set up, so nowhere).</param>
+    public TestAgent(IChatClient chatClient, IConversationRecorder? recorder = null)
     {
         this.chatClient = chatClient;
         factory = new WebApplicationFactory<Program>().WithWebHostBuilder(host =>
@@ -26,7 +29,15 @@ internal sealed class TestAgent : IDisposable
             host.UseSetting("OPENAI_MODEL", "test-model");
             host.UseSetting("LANGFUSE_PUBLIC_KEY", ""); // a developer's .env must not make the tests export traces
             host.UseSetting("LANGFUSE_SECRET_KEY", "");
-            host.ConfigureServices(services => services.AddSingleton(chatClient));
+            host.UseSetting("Suwageval:Url", ""); // a developer's .env must not make the tests send turns to a Suwageval
+            host.ConfigureServices(services =>
+            {
+                services.AddSingleton(chatClient);
+                if (recorder is not null)
+                {
+                    services.AddSingleton(recorder);
+                }
+            });
         });
     }
 
