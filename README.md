@@ -42,7 +42,7 @@ just run-image              # docker run --rm -p 127.0.0.1:7010:7010 --env-file 
 ```
 
 In the container the agent listens on `0.0.0.0:7010` and needs no `.env` file inside: the settings come from `--env-file`.
-Suwageval's `just tmux-dev` runs suwexag from source first (`dotnet watch --project ExampleAgent` in this repository, reading its
+Suwageval's `just tmux-dev start` runs suwexag from source first (`dotnet watch --project ExampleAgent` in this repository, reading its
 `.env`) and falls back to the `suwexag:local` image only when the source project is not there; it refuses to start when neither
 exists. `just` lists all recipes.
 
