@@ -67,6 +67,10 @@ conversation's history in memory and works on a demo shop (`A-17`, a delivered k
 curl -s localhost:7010/chat -H 'content-type: application/json' -d '{"conversationId": "chat-1", "message": "Where is my order A-17?"}'
 ```
 
+Or talk to it in the browser: http://localhost:7010 is a small chat page on the same `POST /chat` (Enter sends, "New conversation"
+starts another). Under an answer it names the policy paragraphs the agent cited (`sources` of the answer: `refund-policy`,
+`shipping-policy`, `warranty-policy`).
+
 Every chat turn is recorded for Suwageval's monitoring (`IConversationRecorder` of the SDK): with `Suwageval__Url`,
 `Suwageval__Agent` and `Suwageval__Environment` in `.env` (see `.env.example`) the turns go to Suwageval in the background, without
 them nowhere. `suwageval/agent.yaml` switches monitoring on (`features.monitoring`, environments `local` and `production`); after

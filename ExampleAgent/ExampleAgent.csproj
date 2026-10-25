@@ -24,6 +24,10 @@
     </Exec>
   </Target>
   <ItemGroup>
+    <!-- The page of GET /, served from the assembly (Chat/ChatEndpoints.cs). -->
+    <EmbeddedResource Include="Chat/ChatPage.html" LogicalName="ExampleAgent.Chat.ChatPage.html" />
+  </ItemGroup>
+  <ItemGroup>
     <InternalsVisibleTo Include="ExampleAgent.Tests" />
   </ItemGroup>
 </Project>

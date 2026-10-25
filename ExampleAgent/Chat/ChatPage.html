@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kettle &amp; Co. chat</title>
+<style>
+  :root { --bg: #f6f6f8; --card: #fff; --text: #1d1d22; --muted: #6b6b76; --me: #4b3fbf; --me-text: #fff; --line: #e2e2e8; --tag: #ecebfb; --tag-text: #3e35a0; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #16161a; --card: #222228; --text: #ececf1; --muted: #9a9aa6; --me: #6c61e0; --me-text: #fff; --line: #33333b; --tag: #2e2b4f; --tag-text: #c9c4ff; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 system-ui, sans-serif; }
+  main { max-width: 720px; margin: 0 auto; height: 100vh; display: flex; flex-direction: column; padding: 16px; }
+  header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  header h1 { font-size: 18px; margin: 0; flex: 1; }
+  header code { color: var(--muted); font-size: 12px; }
+  button { font: inherit; border: 1px solid var(--line); background: var(--card); color: var(--text); border-radius: 8px; padding: 8px 14px; cursor: pointer; }
+  button.send { background: var(--me); color: var(--me-text); border-color: var(--me); }
+  button:disabled { opacity: .5; cursor: default; }
+  #log { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 4px; }
+  .msg { max-width: 85%; padding: 10px 14px; border-radius: 14px; white-space: pre-wrap; }
+  .user { align-self: flex-end; background: var(--me); color: var(--me-text); border-bottom-right-radius: 4px; }
+  .agent { align-self: flex-start; background: var(--card); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+  .error { align-self: center; color: #c0392b; font-size: 13px; }
+  .sources { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); white-space: normal; }
+  .sources span { background: var(--tag); color: var(--tag-text); border-radius: 999px; padding: 2px 8px; }
+  .typing { color: var(--muted); font-style: italic; }
+  form { display: flex; gap: 8px; margin-top: 12px; }
+  textarea { flex: 1; font: inherit; resize: none; border: 1px solid var(--line); background: var(--card); color: var(--text); border-radius: 8px; padding: 8px 10px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Kettle &amp; Co. support</h1>
+    <code id="conversation"></code>
+    <button type="button" id="new">New conversation</button>
+  </header>
+  <div id="log" aria-live="polite"></div>
+  <form id="form">
+    <textarea id="message" rows="2" placeholder="Ask about an order (A-17, B-2) or the shop's policies…" aria-label="Message"></textarea>
+    <button class="send" type="submit" id="send">Send</button>
+  </form>
+</main>
+<script>
+// Every message goes to POST /chat, the same chat Suwageval monitors: each conversation shows up on its Monitoring page.
+const log = document.getElementById("log");
+const form = document.getElementById("form");
+const input = document.getElementById("message");
+const send = document.getElementById("send");
+let conversationId;
+
+function newConversation() {
+  conversationId = `web-${new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "")}-${Math.random().toString(36).slice(2, 6)}`;
+  document.getElementById("conversation").textContent = conversationId;
+  log.replaceChildren();
+  input.focus();
+}
+
+function add(kind, text) {
+  const div = document.createElement("div");
+  div.className = `msg ${kind}`;
+  div.textContent = text;
+  log.append(div);
+  log.scrollTop = log.scrollHeight;
+  return div;
+}
+
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const message = input.value.trim();
+  if (!message || send.disabled) return;
+  input.value = "";
+  add("user", message);
+  const pending = add("agent typing", "…");
+  send.disabled = true;
+  try {
+    const response = await fetch("/chat", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ conversationId, message }),
+    });
+    if (!response.ok) throw new Error(`the agent answered ${response.status}`);
+    const { answer, sources } = await response.json();
+    pending.className = "msg agent";
+    pending.textContent = answer.trim() || "(no answer)";
+    if (sources.length > 0) {
+      const cited = document.createElement("div");
+      cited.className = "sources";
+      cited.append("Sources:", ...sources.map((source) => Object.assign(document.createElement("span"), { textContent: source })));
+      pending.append(cited);
+    }
+  } catch (error) {
+    pending.remove();
+    add("error", `Not sent: ${error.message}`);
+  } finally {
+    send.disabled = false;
+    log.scrollTop = log.scrollHeight;
+    input.focus();
+  }
+});
+
+input.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    form.requestSubmit();
+  }
+});
+document.getElementById("new").addEventListener("click", newConversation);
+newConversation();
+</script>
+</body>
+</html>

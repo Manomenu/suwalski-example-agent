@@ -63,4 +63,39 @@ public class ChatTests
         var turn = Assert.Single(recorded.Turns);
         Assert.Contains("delivered", turn.Items.OfType<ToolResult>().Single().Content, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public async Task The_answer_names_the_policy_paragraphs_it_cites()
+    {
+        using var agent = new TestAgent(
+            ScriptedChatClient.CallsOnce("search_policy", new() { ["query"] = "refund of a shipped order" }, "Not yet."),
+            new Recorded()
+        );
+
+        var response = await agent.Client.PostAsJsonAsync(
+            "/chat",
+            new { conversationId = "chat-3", message = "Can I get a refund?" },
+            TestContext.Current.CancellationToken
+        );
+        var body = await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>(TestContext.Current.CancellationToken);
+
+        Assert.Equal("Not yet.", body.GetProperty("answer").GetString());
+        Assert.Contains("refund-policy", body.GetProperty("sources").EnumerateArray().Select(source => source.GetString()));
+    }
+
+    [Fact]
+    public async Task The_chat_page_is_served_at_the_root()
+    {
+        using var agent = new TestAgent(Answers("Hello!"), new Recorded());
+
+        var response = await agent.Client.GetAsync(new Uri("/", UriKind.Relative), TestContext.Current.CancellationToken);
+
+        response.EnsureSuccessStatusCode();
+        Assert.Equal("text/html", response.Content.Headers.ContentType?.MediaType);
+        Assert.Contains(
+            "fetch(\"/chat\"",
+            await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken),
+            StringComparison.Ordinal
+        );
+    }
 }
