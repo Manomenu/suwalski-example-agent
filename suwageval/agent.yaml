@@ -9,6 +9,7 @@ samples: 3
 # A fake shop with no personal data, so storing its conversations is fine.
 features:
   monitoring:
+    closeAfter: 1m
     environments: [local, production]
 # `suwageval sweep`: one run per variant file in variants/, against the sweep instance on :7011 (scripts/sweep-variant.sh).
 sweep:
