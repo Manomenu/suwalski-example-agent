@@ -1,0 +1,16 @@
+# A demo of an agent error (the web's "Problems", `suwageval problems`): the history holds a tool call whose arguments are not an
+# object, which the agent refuses with HTTP 400 — so there is no answer and the checks are not evaluated. Tagged demo-problems so a
+# normal run can leave it out; delete this file to make the problem go away.
+key: demo-agent-error
+tags: [demo-problems]
+samples: 1
+conversation:
+  - user: "Where is my order A-17?"
+  - tool_call: { id: call-1, name: get_order, arguments: "A-17", agent: support }
+  - tool_result: { call_id: call-1, content: '{"orderId": "A-17", "status": "delivered"}' }
+  - assistant: "It was delivered."
+  - user: "When exactly?"
+checks:
+  - key: answers-the-follow-up
+    type: text
+    contains: "A-17"
