@@ -26,6 +26,16 @@ build-image:
     @[ -d ../suwalski-agent-eval ] || { echo "../suwalski-agent-eval is missing: the image needs the sibling Suwageval checkout for the SDK" >&2; exit 1; }
     docker build --build-context suwageval=../suwalski-agent-eval -t suwexag:local .
 
+# The full local gate: the code, then the acceptance criteria with suwageval gate (needs Suwageval and the agent running: just run)
+[group('check')]
+check:
+    ./scripts/check.sh
+
+# The code part of the gate only (build, tests, formatting; no model): what CI runs
+[group('check')]
+check-code:
+    ./scripts/check-code.sh
+
 # The tests (xUnit v3, no model calls)
 [group('check')]
 test:

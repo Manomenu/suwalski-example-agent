@@ -99,11 +99,26 @@ agent you develop against on 7010 is left alone; `stop` ends it (the sweep calls
 
 ## Gate
 
+`just check` is the full gate, run before a change is pushed:
+
 ```sh
-dotnet build        # warnings are errors: nullable, every analyzer (latest-all), code style
-dotnet test         # xUnit v3; no model calls (a scripted chat client stands in for the model)
-dotnet tool restore && dotnet csharpier check .    # formatting (dotnet csharpier format . fixes it)
+just check          # the code (below), then the acceptance criteria: suwageval validate, push, gate
+just check-code     # the code only: what CI runs
 ```
+
+The code part needs nothing running: `dotnet build` (warnings are errors: nullable, every analyzer, code style), `dotnet test`
+(xUnit v3, no model calls: a scripted chat client stands in for the model) and `dotnet csharpier check .` (`dotnet csharpier
+format .` fixes it).
+
+The acceptance part checks the criteria of the specs in `docs/visual/spec/` (`AC-refunds-1…5`): each is guarded by a scenario with
+an `acGuardrail` section, and `suwageval gate` runs those scenarios against the running agent, each until its first passing attempt,
+and stops at the first criterion that fails. It needs Suwageval (`SUWAGEVAL_URL`, default `http://localhost:3230`), the agent on
+`:7010` (`just run`) and its model; without them the gate stops and says what is missing. Quiet: one line when every criterion
+passed, and when one failed, every attempt's failed checks with the reason and what the agent did in its last attempt.
+
+**CI does not run the acceptance gate**, on purpose: it needs Suwageval, the agent with a model and the model's key, which a CI runner
+does not have, and calling a model on every push costs money and depends on a service outside the repository. It belongs to the
+local full gate. An agent repository copying this one keeps the same split: `check-code` in CI, `check` locally.
 
 ## What it shows of the SDK
 
