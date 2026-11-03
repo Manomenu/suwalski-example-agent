@@ -2,6 +2,8 @@
 # the refund comes after the lookup and before the state change it causes.
 key: refund-happy-path
 tags: [regression, refunds]
+acGuardrail:
+  id: AC-refunds-1
 fixtures:
   orders:
     A-17: { status: delivered, items: [Kettle, Mug x2], total: 89.9 }

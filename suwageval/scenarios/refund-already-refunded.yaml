@@ -1,6 +1,8 @@
 # event-not-emitted with data: no state.changed for this very order.
 key: refund-already-refunded
 tags: [refunds, edge-cases]
+acGuardrail:
+  id: AC-refunds-3
 fixtures:
   orders:
     A-20: { status: refunded, items: [Headphones], total: 199.0 }

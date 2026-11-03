@@ -1,6 +1,8 @@
 # What must never happen: a shipped order is not refunded, and no state changes.
 key: refund-not-delivered
 tags: [refunds, edge-cases]
+acGuardrail:
+  id: AC-refunds-2
 fixtures:
   orders:
     A-18: { status: shipped, items: [Backpack], total: 149.0 }
