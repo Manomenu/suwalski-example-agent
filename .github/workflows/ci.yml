@@ -1,0 +1,45 @@
+name: ci
+
+# The code part of the gate (scripts/check-code.sh: build, tests, formatting), on every push to master and every pull request.
+# The acceptance part (suwageval gate) is not here, on purpose: it needs Suwageval, the agent running with a model and the
+# model's key, so it belongs to the local full gate (just check). README, section "Gate".
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: "1"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+
+jobs:
+  check-code:
+    runs-on: ubuntu-latest
+    steps:
+      # The agent builds the SDK from the sibling checkout (ProjectReference ../../suwalski-agent-eval/...), so both
+      # repositories are checked out side by side, as on a laptop.
+      - uses: actions/checkout@v4
+        with:
+          path: suwalski-example-agent
+      - uses: actions/checkout@v4
+        with:
+          repository: Manomenu/suwalski-agent-eval
+          path: suwalski-agent-eval
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: suwalski-example-agent/global.json
+          cache: true
+          cache-dependency-path: "suwalski-example-agent/**/packages.lock.json"
+
+      - name: Gate (code)
+        working-directory: suwalski-example-agent
+        run: ./scripts/check-code.sh

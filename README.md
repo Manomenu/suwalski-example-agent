@@ -118,7 +118,9 @@ passed, and when one failed, every attempt's failed checks with the reason and w
 
 **CI does not run the acceptance gate**, on purpose: it needs Suwageval, the agent with a model and the model's key, which a CI runner
 does not have, and calling a model on every push costs money and depends on a service outside the repository. It belongs to the
-local full gate. An agent repository copying this one keeps the same split: `check-code` in CI, `check` locally.
+local full gate. CI (`.github/workflows/ci.yml`, on every push to `master` and every pull request) runs `scripts/check-code.sh`,
+with `suwalski-agent-eval` checked out beside it for the SDK. An agent repository copying this one keeps the same split:
+`check-code` in CI, `check` locally.
 
 ## What it shows of the SDK
 
